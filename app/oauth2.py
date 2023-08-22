@@ -40,6 +40,6 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         headers={"WWW-Authenticate": "Bearer"},
     )
     token_data = verify_access_token(token, credentials_exception)
-    user_query = db.query(models.User).filter(models.User.id == token_data.user_id)
+    user_query = db.query(models.User).filter(models.User.user_id == token_data.user_id)
 
     return user_query.first()
