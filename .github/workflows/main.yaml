@@ -1,0 +1,34 @@
+name: CI/CD
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build_and_push:
+    runs-on: ubuntu-latest
+
+    steps:
+    - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Build and push Docker images
+      run: |
+        docker build -t jirathipk/postgres-vec-geo . -f Dockerfile.db
+        docker build -t jirathipk/fastapi-llm . -f Dockerfile.backend
+        docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+        docker push jirathipk/postgres-vec-geo
+        docker push jirathipk/fastapi-llm
+
+    - name: SSH and run docker-compose on GCP instance
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.GCP_INSTANCE_IP }}
+        username: jirathip # The username associated with the SSH key you added to GCP.
+        key: ${{ secrets.GCP_SSH_PRIVATE_KEY }}
+        port: 22
+        script: |
+          docker-compose -f docker-compose-prod.yaml pull
+          docker-compose -f docker-compose-prod.yaml up -d

@@ -1,0 +1,28 @@
+version: '3'
+services:
+  db:
+    container_name: db
+    image: australia-southeast2-docker.pkg.dev/fleet-fortress-395004/settle-aid/postgres-vec-geo
+    restart: always
+    environment:
+      - POSTGRES_DB=database
+      - POSTGRES_USER=db_user
+      - POSTGRES_PASSWORD=password1234
+    volumes:
+      - database_volume:/var/lib/postgresql/data/
+
+  backend:
+    image: australia-southeast2-docker.pkg.dev/fleet-fortress-395004/settle-aid/settle-aid-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_HOSTNAME=db
+      - DATABASE_NAME=database
+      - DATABASE_PORT=5432
+      - DATABASE_PASSWORD=password1234
+      - DATABASE_USERNAME=db_user
+    depends_on:
+      - db
+
+volumes:
+  database_volume:
