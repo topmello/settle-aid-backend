@@ -33,15 +33,4 @@ async def startup_event():
     print("Starting up...")
     prompt = "Hello World"
     embed = search.model.encode([prompt])
-
-    with open('data/landmarks.json', 'r') as f:
-        landmarks = json.load(f)
-    print(type(landmarks[0]['landmark_embedding']))
-    print('Inserting data')
-    db = next(get_db())
-    stmt = insert(models.Landmark).values(landmarks).on_conflict_do_nothing(index_elements=['landmark_id'])
-    db.execute(stmt)
-    db.commit()
-    print('Done inserting data')
-    #print(embed.shape)
     pass
