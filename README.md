@@ -16,6 +16,10 @@ $ docker-compose -f docker-compose-dev.yaml down
 
 To delete volume(this will delete data in the database): add `-v` tag
 
+## Local Swagger Docs
+After start the container, it will be available at
+http://localhost:8000/docs
+
 ## Update database schema (inside backend container)
 
 ```

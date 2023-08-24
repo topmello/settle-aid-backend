@@ -32,3 +32,6 @@ class SearchResult(BaseModel):
     latitude: float
     longitude: float
     similarity: float
+
+class UsernameGen(BaseModel):
+    username: str
