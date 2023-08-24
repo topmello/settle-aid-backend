@@ -27,7 +27,7 @@ jobs:
     
     - name: Build and push Docker images
       run: |
-      docker build -t australia-southeast2-docker.pkg.dev/fleet-fortress-395004/settle-aid/postgres-vec-geo . -f Dockerfile.db
-      docker push australia-southeast2-docker.pkg.dev/fleet-fortress-395004/settle-aid/postgres-vec-geo
+        docker build -t australia-southeast2-docker.pkg.dev/fleet-fortress-395004/settle-aid/postgres-vec-geo . -f Dockerfile.db
+        docker push australia-southeast2-docker.pkg.dev/fleet-fortress-395004/settle-aid/postgres-vec-geo
 
 
