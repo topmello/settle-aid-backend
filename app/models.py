@@ -28,7 +28,7 @@ class Landmark(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
-    coord = Column(Geometry('POINT'), nullable=False)
+    coord = Column(Geometry(geometry_type='POINT', srid=4326), nullable=False)
     embedding = mapped_column(Vector(384))
 
 class Restaurant(Base):
@@ -36,6 +36,6 @@ class Restaurant(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
-    coord = Column(Geometry('POINT'), nullable=False)
+    coord = Column(Geometry(geometry_type='POINT', srid=4326), nullable=False)
     embedding = mapped_column(Vector(384))
 

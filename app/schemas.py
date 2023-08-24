@@ -22,6 +22,10 @@ class TokenData(BaseModel):
 class Query(BaseModel):
     query: str
     location_type: str
+    longitude: float
+    latitude: float
+    distance_threshold: float
+    similarity_threshold: float
 
 class SearchResult(BaseModel):
     name: str
