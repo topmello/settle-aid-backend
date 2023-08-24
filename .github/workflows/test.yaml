@@ -24,5 +24,10 @@ jobs:
         workload_identity_provider: 'projects/593588930543/locations/global/workloadIdentityPools/githubactions/providers/github'
         service_account: '593588930543-compute@developer.gserviceaccount.com'
         project_id: 'fleet-fortress-395004'
+    
+    - name: Build and push Docker images
+      run: |
+      docker build -t australia-southeast2-docker.pkg.dev/fleet-fortress-395004/settle-aid/postgres-vec-geo . -f Dockerfile.db
+      docker push australia-southeast2-docker.pkg.dev/fleet-fortress-395004/settle-aid/postgres-vec-geo
 
 
