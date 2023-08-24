@@ -26,11 +26,11 @@ jobs:
         project_id: 'fleet-fortress-395004'
 
     - name: Login to Artifact Registry
-        uses: docker/login-action@v1
-        with:
-          registry: australia-southeast2-docker.pkg.dev
-          username: oauth2accesstoken
-          password: ${{ steps.auth.outputs.access_token }}
+      uses: docker/login-action@v1
+      with:
+        registry: australia-southeast2-docker.pkg.dev
+        username: oauth2accesstoken
+        password: ${{ steps.auth.outputs.access_token }}
     
     - name: Build and push Docker images
       run: |
