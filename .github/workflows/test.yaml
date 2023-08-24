@@ -24,6 +24,8 @@ jobs:
         workload_identity_provider: 'projects/593588930543/locations/global/workloadIdentityPools/githubactions/providers/github'
         service_account: '593588930543-compute@developer.gserviceaccount.com'
         project_id: 'fleet-fortress-395004'
+        token_format: 'access_token'
+        access_token_lifetime: 300s
 
     - name: Login to Artifact Registry
       uses: docker/login-action@v1
