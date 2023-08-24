@@ -6,8 +6,7 @@ from .. import schemas, models
 
 from ..database import get_db
 
-from ..name_generator import name_generator, generate_name
-
+from models.name_generator  import name_generator, generate_name
 
 
 router = APIRouter(

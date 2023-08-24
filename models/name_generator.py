@@ -152,12 +152,15 @@ def generate_name(model):
     return ''.join(decode(model.generate(idx, block_size).tolist()[0])).strip().strip('<').strip('>')
 
 
+# Instantiate the model
 name_generator = LanguageModel()
 
 # Get the path to the directory containing user.py
 current_directory = Path(__file__).parent
 # Construct the path to the weights file
-model_path = current_directory.parent / "models" / "name_generator.pt"
+model_path = current_directory / "name_generator.pt"
+
+# Load the weights
 try:
     name_generator.load_state_dict(torch.load(model_path))
 except Exception as e:

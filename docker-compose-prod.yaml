@@ -7,7 +7,7 @@ services:
     environment:
       - POSTGRES_DB=database
       - POSTGRES_USER=db_user
-      - POSTGRES_PASSWORD=password1234
+      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
     volumes:
       - database_volume:/var/lib/postgresql/data/
 
@@ -19,10 +19,10 @@ services:
       - DATABASE_HOSTNAME=db
       - DATABASE_NAME=database
       - DATABASE_PORT=5432
-      - DATABASE_PASSWORD=password1234
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
       - DATABASE_USERNAME=db_user
-      - SECRET_KEY=85a95f4921be5a5f0f122f2bde3f6609984d728867bb12ae713b5e32499b2204 #openssl rand -hex 32
-      - ALGORITHM=HS256
+      - SECRET_KEY=${SECRET_KEY}
+      - ALGORITHM=${ALGORITHM}
       - ACCESS_TOKEN_EXPIRE_MINUTES=30
     depends_on:
       - db
