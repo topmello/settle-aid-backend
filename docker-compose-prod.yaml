@@ -2,7 +2,7 @@ version: '3'
 services:
   db:
     container_name: db
-    image: australia-southeast2-docker.pkg.dev/fleet-fortress-395004/settle-aid/postgres-vec-geo
+    image: australia-southeast2-docker.pkg.dev/fleet-fortress-395004/settle-aid/postgres-vec-geo:latest
     restart: always
     environment:
       - POSTGRES_DB=database
@@ -12,7 +12,7 @@ services:
       - database_volume:/var/lib/postgresql/data/
 
   backend:
-    image: australia-southeast2-docker.pkg.dev/fleet-fortress-395004/settle-aid/settle-aid-backend
+    image: australia-southeast2-docker.pkg.dev/fleet-fortress-395004/settle-aid/settle-aid-backend:latest
     ports:
       - "8000:8000"
     environment:

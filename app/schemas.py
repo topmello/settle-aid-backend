@@ -19,3 +19,12 @@ class TokenData(BaseModel):
     user_id: int
     username: str
 
+class Query(BaseModel):
+    query: str
+    location_type: str
+
+class SearchResult(BaseModel):
+    name: str
+    latitude: float
+    longitude: float
+    similarity: float

@@ -34,3 +34,7 @@ async def startup_event():
     prompt = "Hello World"
     embed = search.model.encode([prompt])
     pass
+
+@app.get("/")
+async def root():
+    return {"message": "Hello World"}

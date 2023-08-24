@@ -26,7 +26,16 @@ class Prompt(Base):
 class Landmark(Base):
     __tablename__ = "landmarks"
 
-    landmark_id = Column(Integer, primary_key=True, index=True)
-    landmark_name = Column(String, nullable=False)
-    landmark_coord = Column(Geometry('POINT'), nullable=False)
-    landmark_embedding = mapped_column(Vector(384))
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    coord = Column(Geometry('POINT'), nullable=False)
+    embedding = mapped_column(Vector(384))
+
+class Restaurant(Base):
+    __tablename__ = "restaurants"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    coord = Column(Geometry('POINT'), nullable=False)
+    embedding = mapped_column(Vector(384))
+

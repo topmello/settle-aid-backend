@@ -17,8 +17,8 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.execute("CREATE EXTENSION postgis;")
-    op.execute("CREATE EXTENSION vector;")
+    op.execute("CREATE EXTENSION IF NOT EXISTS postgis;")
+    op.execute("CREATE EXTENSION IF NOT EXISTS vector;")
     pass
 
 
