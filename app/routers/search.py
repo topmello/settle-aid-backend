@@ -22,8 +22,8 @@ LOCATION_TYPE_MODELS = {
     "restaurant": models.Restaurant,
 }
 
-@router.get("/", response_model=list[schemas.SearchResult])
-async def search_by_prompt(query: schemas.Query, db: Session = Depends(get_db), current_user: schemas.User = Depends(oauth2.get_current_user)):
+@router.post("/", response_model=list[schemas.SearchResult])
+async def search_by_query(query: schemas.Query, db: Session = Depends(get_db), current_user: schemas.User = Depends(oauth2.get_current_user)):
     query_embeding = model.encode([query.query])[0]
 
     location = query.location_type
