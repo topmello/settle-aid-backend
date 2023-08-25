@@ -1,10 +1,13 @@
-name: Test
+name: Build and Push Images
 
 on:
-  workflow_dispatch
+  workflow_dispatch   # Manual trigger
+  push:               # Push event
+    branches:
+      - deploy        # Only when pushed to 'deploy' branch
 
 jobs:
-  test_github_action:
+  build_push_images:
 
     runs-on: ubuntu-latest
     strategy:
