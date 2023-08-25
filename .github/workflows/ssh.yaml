@@ -1,0 +1,36 @@
+name: SSH and compose
+
+on:
+  workflow_dispatch
+
+jobs:
+  SSH_VM:
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+    - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
+    # actions/checkout MUST come before auth
+    - uses: 'actions/checkout@v3'
+
+    - id: 'auth'
+      name: 'Authenticate to Google Cloud'
+      uses: 'google-github-actions/auth@v1'
+      with:
+        workload_identity_provider: 'projects/593588930543/locations/global/workloadIdentityPools/githubactions/providers/github'
+        service_account: 'github-actions@fleet-fortress-395004.iam.gserviceaccount.com'
+        project_id: 'fleet-fortress-395004'
+        token_format: 'access_token'
+        access_token_lifetime: 1000s
+
+    - id: 'compute-ssh'
+      uses: 'google-github-actions/ssh-compute@v0'
+      with:
+        instance_name: 'instance-1'
+        zone: 'australia-southeast2-a'
+        ssh_private_key: '${{ secrets.GCP_SSH_PRIVATE_KEY }}'
+        command: 'echo Hello world'
