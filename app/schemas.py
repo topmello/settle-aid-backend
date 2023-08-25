@@ -27,6 +27,14 @@ class Query(BaseModel):
     distance_threshold: float
     similarity_threshold: float
 
+class QuerySeq(BaseModel):
+    query: list[str]
+    location_type: list[str]
+    longitude: float
+    latitude: float
+    distance_threshold: float
+    similarity_threshold: float
+
 class SearchResult(BaseModel):
     name: str
     latitude: float
