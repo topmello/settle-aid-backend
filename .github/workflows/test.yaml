@@ -34,12 +34,23 @@ jobs:
         username: oauth2accesstoken
         password: ${{ steps.auth.outputs.access_token }}
     
-    - name: Build and push Docker image to GAR
+    - name: Build and push Docker image to GAR (DB)
       uses: docker/build-push-action@v2
       with:
         push: true
         tags: australia-southeast2-docker.pkg.dev/fleet-fortress-395004/settle-aid/postgres-vec-geo:latest
         context: .
         file: Dockerfile.db
+    
+    - name: Build and push Docker image to GAR (Backend)
+      uses: docker/build-push-action@v2
+      with:
+        push: true
+        tags: australia-southeast2-docker.pkg.dev/fleet-fortress-395004/settle-aid/settle-aid-backend:latest
+        context: .
+        file: Dockerfile.backend
+
+    
+    
 
 

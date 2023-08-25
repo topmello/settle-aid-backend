@@ -7,22 +7,22 @@ services:
     environment:
       - POSTGRES_DB=database
       - POSTGRES_USER=db_user
-      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+      - POSTGRES_PASSWORD=password1234
     volumes:
       - database_volume:/var/lib/postgresql/data/
 
   backend:
     image: australia-southeast2-docker.pkg.dev/fleet-fortress-395004/settle-aid/settle-aid-backend:latest
     ports:
-      - "8000:8000"
+      - "7999:8000"
     environment:
       - DATABASE_HOSTNAME=db
       - DATABASE_NAME=database
       - DATABASE_PORT=5432
-      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+      - DATABASE_PASSWORD=password1234
       - DATABASE_USERNAME=db_user
-      - SECRET_KEY=${SECRET_KEY}
-      - ALGORITHM=${ALGORITHM}
+      - SECRET_KEY=85a95f4921be5a5f0f122f2bde3f6609984d728867bb12ae713b5e32499b2204
+      - ALGORITHM=HS256
       - ACCESS_TOKEN_EXPIRE_MINUTES=30
     depends_on:
       - db
