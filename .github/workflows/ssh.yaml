@@ -27,10 +27,12 @@ jobs:
         token_format: 'access_token'
         access_token_lifetime: 1000s
 
-    - id: 'compute-ssh'
-      uses: 'google-github-actions/ssh-compute@v0'
+    - name: SSH and run docker-compose on GCP instance
+      uses: appleboy/ssh-action@v1.0.0
       with:
-        instance_name: 'instance-1'
-        zone: 'australia-southeast2-a'
-        ssh_private_key: '${{ secrets.GCP_SSH_PRIVATE_KEY }}'
-        command: 'echo Hello world'
+        host: ${{ secrets.GCP_INSTANCE_IP }}
+        username: github-actions # The username associated with the SSH key you added to GCP.
+        key: ${{ secrets.GCP_SSH_PRIVATE_KEY }}
+        port: 22
+        script: |
+          'echo Hello world'
