@@ -7,6 +7,14 @@ jobs:
   test_github_action:
 
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - dockerfile: Dockerfile.db
+            tag: australia-southeast2-docker.pkg.dev/fleet-fortress-395004/settle-aid/postgres-vec-geo:latest
+          - dockerfile: Dockerfile.backend
+            tag: australia-southeast2-docker.pkg.dev/fleet-fortress-395004/settle-aid/settle-aid-backend:latest
 
     permissions:
       contents: 'read'
@@ -25,7 +33,7 @@ jobs:
         service_account: 'github-actions@fleet-fortress-395004.iam.gserviceaccount.com'
         project_id: 'fleet-fortress-395004'
         token_format: 'access_token'
-        access_token_lifetime: 300s
+        access_token_lifetime: 1000s
 
     - name: Login to Artifact Registry
       uses: docker/login-action@v1
@@ -38,17 +46,9 @@ jobs:
       uses: docker/build-push-action@v2
       with:
         push: true
-        tags: australia-southeast2-docker.pkg.dev/fleet-fortress-395004/settle-aid/postgres-vec-geo:latest
+        tags: ${{ matrix.tag }}
         context: .
-        file: Dockerfile.db
-    
-    - name: Build and push Docker image to GAR (Backend)
-      uses: docker/build-push-action@v2
-      with:
-        push: true
-        tags: australia-southeast2-docker.pkg.dev/fleet-fortress-395004/settle-aid/settle-aid-backend:latest
-        context: .
-        file: Dockerfile.backend
+        file: ${{ matrix.dockerfile }}
 
     
     
