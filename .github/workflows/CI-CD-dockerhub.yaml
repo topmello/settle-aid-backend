@@ -1,0 +1,36 @@
+name: Build and Push Images
+
+on:
+  workflow_dispatch:   # Manual trigger
+
+jobs:
+  build_push_images:
+
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - dockerfile: Dockerfile.db
+            tag: jirathipk/postgres-vec-geo:latest
+          - dockerfile: Dockerfile.backend
+            tag: jirathipk/settle-aid-backend:latest
+
+
+    steps:
+    - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
+    # actions/checkout MUST come before auth
+    - uses: 'actions/checkout@v3'
+    
+    - name: Build and push Docker image to GAR
+      uses: docker/build-push-action@v2
+      with:
+        push: true
+        tags: ${{ matrix.tag }}
+        context: .
+        file: ${{ matrix.dockerfile }}
+
+    
+    
+
+
