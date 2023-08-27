@@ -22,14 +22,14 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer, primary_key=True, index=True),
         sa.Column("prompt_id", sa.Integer, sa.ForeignKey("prompts.prompt_id"), nullable=False),
         sa.Column("created_by_user_id", sa.Integer, sa.ForeignKey("users.user_id"), nullable=False),
-        sa.Column("restaurant_id", sa.Integer, sa.ForeignKey("restaurants.id"), nullable=False),
+        sa.Column("location_id", sa.Integer, sa.ForeignKey("restaurants.id"), nullable=False),
         sa.Column("created_at", sa.TIMESTAMP(timezone=True), server_default=sa.text("now()"), nullable=False)
     )
 
     op.create_table(
         "prompt_restaurant_votes",
         sa.Column("id", sa.Integer, primary_key=True, index=True),
-        sa.Column("prompt_restaurant_id", sa.Integer, sa.ForeignKey("prompt_restaurants.id"), nullable=False),
+        sa.Column("prompt_location_id", sa.Integer, sa.ForeignKey("prompt_restaurants.id"), nullable=False),
         sa.Column("user_id", sa.Integer, sa.ForeignKey("users.user_id"), nullable=False),
         sa.Column("vote", sa.Boolean, nullable=False), # True for upvote, False for downvote
         sa.Column("created_at", sa.TIMESTAMP(timezone=True), server_default=sa.text("now()"), nullable=False)
@@ -39,13 +39,13 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer, primary_key=True, index=True),
         sa.Column("prompt_id", sa.Integer, sa.ForeignKey("prompts.prompt_id"), nullable=False),
         sa.Column("created_by_user_id", sa.Integer, sa.ForeignKey("users.user_id"), nullable=False),
-        sa.Column("grocery_id", sa.Integer, sa.ForeignKey("groceries.id"), nullable=False),
+        sa.Column("location_id", sa.Integer, sa.ForeignKey("groceries.id"), nullable=False),
         sa.Column("created_at", sa.TIMESTAMP(timezone=True), server_default=sa.text("now()"), nullable=False)
     )
     op.create_table(
         "prompt_grocery_votes",
         sa.Column("id", sa.Integer, primary_key=True, index=True),
-        sa.Column("prompt_grocery_id", sa.Integer, sa.ForeignKey("prompt_groceries.id"), nullable=False),
+        sa.Column("prompt_location_id", sa.Integer, sa.ForeignKey("prompt_groceries.id"), nullable=False),
         sa.Column("user_id", sa.Integer, sa.ForeignKey("users.user_id"), nullable=False),
         sa.Column("vote", sa.Boolean, nullable=False), # True for upvote, False for downvote
         sa.Column("created_at", sa.TIMESTAMP(timezone=True), server_default=sa.text("now()"), nullable=False)
@@ -55,13 +55,13 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer, primary_key=True, index=True),
         sa.Column("prompt_id", sa.Integer, sa.ForeignKey("prompts.prompt_id"), nullable=False),
         sa.Column("created_by_user_id", sa.Integer, sa.ForeignKey("users.user_id"), nullable=False),
-        sa.Column("pharmacy_id", sa.Integer, sa.ForeignKey("pharmacies.id"), nullable=False),
+        sa.Column("location_id", sa.Integer, sa.ForeignKey("pharmacies.id"), nullable=False),
         sa.Column("created_at", sa.TIMESTAMP(timezone=True), server_default=sa.text("now()"), nullable=False)
     )
     op.create_table(
         "prompt_pharmacy_votes",
         sa.Column("id", sa.Integer, primary_key=True, index=True),
-        sa.Column("prompt_pharmacy_id", sa.Integer, sa.ForeignKey("prompt_pharmacies.id"), nullable=False),
+        sa.Column("prompt_location_id", sa.Integer, sa.ForeignKey("prompt_pharmacies.id"), nullable=False),
         sa.Column("user_id", sa.Integer, sa.ForeignKey("users.user_id"), nullable=False),
         sa.Column("vote", sa.Boolean, nullable=False), # True for upvote, False for downvote
         sa.Column("created_at", sa.TIMESTAMP(timezone=True), server_default=sa.text("now()"), nullable=False)
@@ -71,11 +71,12 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_table("prompt_restaurants")
     op.drop_table("prompt_restaurant_votes")
-    op.drop_table("prompt_groceries")
+    op.drop_table("prompt_restaurants")
     op.drop_table("prompt_grocery_votes")
-    op.drop_table("prompt_pharmacies")
+    op.drop_table("prompt_groceries")
     op.drop_table("prompt_pharmacy_votes")
+    op.drop_table("prompt_pharmacies")
     
+
     pass

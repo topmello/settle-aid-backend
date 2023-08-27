@@ -24,6 +24,7 @@ class Prompt(Base):
     location_type = Column(String, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True),server_default = text("now()"), nullable=False)
 
+
 class Landmark(Base):
     __tablename__ = "landmarks"
 
@@ -62,14 +63,14 @@ class Prompt_Landmark(Base):
     id = Column(Integer, primary_key=True, index=True)
     prompt_id = Column(Integer, ForeignKey("prompts.prompt_id"), nullable=False)
     created_by_user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
-    landmark_id = Column(Integer, ForeignKey("landmarks.id"), nullable=False)
+    location_id = Column(Integer, ForeignKey("landmarks.id"), nullable=False)
     created_at = Column(TIMESTAMP(timezone=True),server_default = text("now()"), nullable=False)
 
 class Prompt_Landmark_Vote(Base):
     __tablename__ = "prompt_landmark_votes"
 
     id = Column(Integer, primary_key=True)
-    prompt_landmark_id = Column(Integer, ForeignKey("prompt_landmarks.id"), nullable=False)
+    prompt_location_id = Column(Integer, ForeignKey("prompt_landmarks.id"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
     vote = Column(Boolean, nullable=False) # True for upvote, False for downvote
     created_at = Column(TIMESTAMP(timezone=True),server_default = text("now()"), nullable=False)
@@ -80,14 +81,14 @@ class Prompt_Restaurant(Base):
     id = Column(Integer, primary_key=True, index=True)
     prompt_id = Column(Integer, ForeignKey("prompts.prompt_id"), nullable=False)
     created_by_user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
-    restaurant_id = Column(Integer, ForeignKey("restaurants.id"), nullable=False)
+    location_id = Column(Integer, ForeignKey("restaurants.id"), nullable=False)
     created_at = Column(TIMESTAMP(timezone=True),server_default = text("now()"), nullable=False)
 
 class Prompt_Restaurant_Vote(Base):
     __tablename__ = "prompt_restaurant_votes"
 
     id = Column(Integer, primary_key=True)
-    prompt_restaurant_id = Column(Integer, ForeignKey("prompt_restaurants.id"), nullable=False)
+    prompt_location_id = Column(Integer, ForeignKey("prompt_restaurants.id"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
     vote = Column(Boolean, nullable=False) # True for upvote, False for downvote
     created_at = Column(TIMESTAMP(timezone=True),server_default = text("now()"), nullable=False)
@@ -98,14 +99,14 @@ class Prompt_Grocery(Base):
     id = Column(Integer, primary_key=True, index=True)
     prompt_id = Column(Integer, ForeignKey("prompts.prompt_id"), nullable=False)
     created_by_user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
-    grocery_id = Column(Integer, ForeignKey("groceries.id"), nullable=False)
+    location_id = Column(Integer, ForeignKey("groceries.id"), nullable=False)
     created_at = Column(TIMESTAMP(timezone=True),server_default = text("now()"), nullable=False)
 
 class Prompt_Grocery_Vote(Base):
     __tablename__ = "prompt_grocery_votes"
 
     id = Column(Integer, primary_key=True)
-    prompt_grocery_id = Column(Integer, ForeignKey("prompt_groceries.id"), nullable=False)
+    prompt_location_id = Column(Integer, ForeignKey("prompt_groceries.id"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
     vote = Column(Boolean, nullable=False) # True for upvote, False for downvote
     created_at = Column(TIMESTAMP(timezone=True),server_default = text("now()"), nullable=False)
@@ -116,14 +117,14 @@ class Prompt_Pharmacy(Base):
     id = Column(Integer, primary_key=True, index=True)
     prompt_id = Column(Integer, ForeignKey("prompts.prompt_id"), nullable=False)
     created_by_user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
-    pharmacy_id = Column(Integer, ForeignKey("pharmacies.id"), nullable=False)
+    location_id = Column(Integer, ForeignKey("pharmacies.id"), nullable=False)
     created_at = Column(TIMESTAMP(timezone=True),server_default = text("now()"), nullable=False)
 
 class Prompt_Pharmacy_Vote(Base):
     __tablename__ = "prompt_pharmacy_votes"
 
     id = Column(Integer, primary_key=True)
-    prompt_pharmacy_id = Column(Integer, ForeignKey("prompt_pharmacies.id"), nullable=False)
+    prompt_location_id = Column(Integer, ForeignKey("prompt_pharmacies.id"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
     vote = Column(Boolean, nullable=False) # True for upvote, False for downvote
     created_at = Column(TIMESTAMP(timezone=True),server_default = text("now()"), nullable=False)

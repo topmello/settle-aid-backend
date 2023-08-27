@@ -35,3 +35,12 @@ $ alembic downgrade base
 ```
 $ python -m scripts.insert_data
 ```
+
+## For deployment in VM
+```
+$ sudo docker-compose pull
+```
+
+```
+$ sudo docker-compose -p settle-aid up -d
+```

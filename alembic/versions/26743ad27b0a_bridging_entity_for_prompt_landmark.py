@@ -22,14 +22,14 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer, primary_key=True, index=True),
         sa.Column("prompt_id", sa.Integer, sa.ForeignKey("prompts.prompt_id"), nullable=False),
         sa.Column("created_by_user_id", sa.Integer, sa.ForeignKey("users.user_id"), nullable=False),
-        sa.Column("landmark_id", sa.Integer, sa.ForeignKey("landmarks.id"), nullable=False),
+        sa.Column("location_id", sa.Integer, sa.ForeignKey("landmarks.id"), nullable=False),
         sa.Column("created_at", sa.TIMESTAMP(timezone=True), server_default=sa.text("now()"), nullable=False)
     )
 
     op.create_table(
         "prompt_landmark_votes",
         sa.Column("id", sa.Integer, primary_key=True, index=True),
-        sa.Column("prompt_landmark_id", sa.Integer, sa.ForeignKey("prompt_landmarks.id"), nullable=False),
+        sa.Column("prompt_location_id", sa.Integer, sa.ForeignKey("prompt_landmarks.id"), nullable=False),
         sa.Column("user_id", sa.Integer, sa.ForeignKey("users.user_id"), nullable=False),
         sa.Column("vote", sa.Boolean, nullable=False), # True for upvote, False for downvote
         sa.Column("created_at", sa.TIMESTAMP(timezone=True), server_default=sa.text("now()"), nullable=False)
@@ -38,6 +38,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_table("prompt_landmarks")
     op.drop_table("prompt_landmark_votes")
+    op.drop_table("prompt_landmarks")
+    
     pass

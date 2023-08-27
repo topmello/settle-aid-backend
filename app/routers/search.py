@@ -26,6 +26,13 @@ LOCATION_TYPE_MODELS = {
     "pharmacy": models.Pharmacy
 }
 
+PROMPT_LOCATION_TYPE_MODELS = {
+    "landmark": models.Prompt_Landmark,
+    "restaurant": models.Prompt_Restaurant,
+    "grocery": models.Prompt_Grocery,
+    "pharmacy": models.Prompt_Pharmacy
+}
+
 def softmax(x):
     """Compute softmax values for each sets of scores in x."""
     e_x = np.exp(x - np.max(x))
@@ -46,10 +53,11 @@ async def search_by_query(query: schemas.Query, db: Session = Depends(get_db)):
 
     query_result = (
         db.query(
-        Model.name.label('name'),
-        func.st_y(Model.coord).label('latitude'),
-        func.st_x(Model.coord).label('longitude'),
-        (1-Model.embedding.cosine_distance(query_embeding)).label('similarity')
+            Model.id.label('id'),
+            Model.name.label('name'),
+            func.st_y(Model.coord).label('latitude'),
+            func.st_x(Model.coord).label('longitude'),
+            (1-Model.embedding.cosine_distance(query_embeding)).label('similarity')
         )
         .filter(func.ST_Distance(
             func.ST_Transform(Model.coord, 3857), 
@@ -84,9 +92,11 @@ async def search_by_query_seq(querys: schemas.QuerySeq, db: Session = Depends(ge
             prompt_embeding=query_embeding,
             location_type=querys.location_type[i]
             )
+
+        
         db.add(prompt)
         db.commit()
-
+        db.refresh(prompt)
 
         # Dynamically get the correct model based on location type
         Model = LOCATION_TYPE_MODELS.get(querys.location_type[i])
@@ -96,10 +106,11 @@ async def search_by_query_seq(querys: schemas.QuerySeq, db: Session = Depends(ge
 
         query_result = (
             db.query(
-            Model.name.label('name'),
-            func.st_y(Model.coord).label('latitude'),
-            func.st_x(Model.coord).label('longitude'),
-            (1-Model.embedding.cosine_distance(query_embeding)).label('similarity')
+                Model.id.label('id'),
+                Model.name.label('name'),
+                func.st_y(Model.coord).label('latitude'),
+                func.st_x(Model.coord).label('longitude'),
+                (1-Model.embedding.cosine_distance(query_embeding)).label('similarity')
             )
             .filter(func.ST_Distance(
                 func.ST_Transform(Model.coord, 3857), 
@@ -120,6 +131,16 @@ async def search_by_query_seq(querys: schemas.QuerySeq, db: Session = Depends(ge
 
         else:
             raise HTTPException(status_code=404, detail="No results found")
+        
+        prompt_location = PROMPT_LOCATION_TYPE_MODELS.get(querys.location_type[i])
+        insert_prompt_location = prompt_location(
+            prompt_id=prompt.prompt_id,
+            created_by_user_id=current_user.user_id,
+            location_id=location.id
+            )
+
+        db.add(insert_prompt_location)
+        db.commit()
 
         
 
@@ -147,6 +168,7 @@ async def search_by_query_seq(querys: schemas.QuerySeq, db: Session = Depends(ge
             )
         db.add(prompt)
         db.commit()
+        db.refresh(prompt)
 
         # Dynamically get the correct model based on location type
         Model = LOCATION_TYPE_MODELS.get(querys.location_type[i])
@@ -156,10 +178,11 @@ async def search_by_query_seq(querys: schemas.QuerySeq, db: Session = Depends(ge
 
         query_result = (
             db.query(
-            Model.name.label('name'),
-            func.st_y(Model.coord).label('latitude'),
-            func.st_x(Model.coord).label('longitude'),
-            (1-Model.embedding.cosine_distance(query_embeding)).label('similarity')
+                Model.id.label('id'),
+                Model.name.label('name'),
+                func.st_y(Model.coord).label('latitude'),
+                func.st_x(Model.coord).label('longitude'),
+                (1-Model.embedding.cosine_distance(query_embeding)).label('similarity')
             )
             .filter(func.ST_Distance(
                 func.ST_Transform(Model.coord, 3857), 
@@ -188,6 +211,17 @@ async def search_by_query_seq(querys: schemas.QuerySeq, db: Session = Depends(ge
 
         else:
             raise HTTPException(status_code=404, detail="No results found")
+        
+        print(chosen_location)
+        prompt_location = PROMPT_LOCATION_TYPE_MODELS.get(querys.location_type[i])
+        insert_prompt_location = prompt_location(
+            prompt_id=prompt.prompt_id,
+            created_by_user_id=current_user.user_id,
+            location_id=chosen_location.id
+            )
+
+        db.add(insert_prompt_location)
+        db.commit()
 
         
 
