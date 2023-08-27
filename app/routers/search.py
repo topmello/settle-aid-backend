@@ -80,23 +80,24 @@ async def search_by_query_seq(querys: schemas.QuerySeq, db: Session = Depends(ge
     results = []
     seen_places = set()
 
+    prompt = models.Prompt(
+            created_by_user_id=current_user.user_id,
+            prompt=querys.query,
+            location_type=querys.location_type
+            )
+
+        
+    db.add(prompt)
+    db.commit()
+    db.refresh(prompt)
+
     current_location = WKTElement(f'POINT({querys.longitude} {querys.latitude})', srid=4326)
 
     for i, query in enumerate(querys.query):
         query_embeding = model.encode([query])[0]
 
         
-        prompt = models.Prompt(
-            created_by_user_id=current_user.user_id,
-            prompt=query,
-            prompt_embeding=query_embeding,
-            location_type=querys.location_type[i]
-            )
-
         
-        db.add(prompt)
-        db.commit()
-        db.refresh(prompt)
 
         # Dynamically get the correct model based on location type
         Model = LOCATION_TYPE_MODELS.get(querys.location_type[i])
@@ -155,20 +156,20 @@ async def search_by_query_seq(querys: schemas.QuerySeq, db: Session = Depends(ge
     results = []
     seen_places = set()
 
+    prompt = models.Prompt(
+            created_by_user_id=current_user.user_id,
+            prompt=querys.query,
+            location_type=querys.location_type
+            )
+
+        
+    db.add(prompt)
+    db.commit()
+    db.refresh(prompt)
     current_location = WKTElement(f'POINT({querys.longitude} {querys.latitude})', srid=4326)
 
     for i, query in enumerate(querys.query):
         query_embeding = model.encode([query])[0]
-
-        prompt = models.Prompt(
-            created_by_user_id=current_user.user_id,
-            prompt=query,
-            prompt_embeding=query_embeding,
-            location_type=querys.location_type[i]
-            )
-        db.add(prompt)
-        db.commit()
-        db.refresh(prompt)
 
         # Dynamically get the correct model based on location type
         Model = LOCATION_TYPE_MODELS.get(querys.location_type[i])

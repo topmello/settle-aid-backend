@@ -14,8 +14,8 @@ class User(BaseModel):
 class Prompt(BaseModel):
     prompt_id: int
     created_by_user_id: int
-    prompt: str
-    location_type: str
+    prompt: list[str]
+    location_type: list[str]
     created_at: datetime
 
     class Config:
@@ -37,6 +37,7 @@ class TokenData(BaseModel):
     username: str
 
 class Query(BaseModel):
+
     query: str
     location_type: str
     longitude: float

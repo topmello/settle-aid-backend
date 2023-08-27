@@ -1,6 +1,6 @@
 from .database import Base
 
-from sqlalchemy import Column, Integer, String, TIMESTAMP, text, ForeignKey, Boolean
+from sqlalchemy import Column, Integer, String, TIMESTAMP, text, ForeignKey, Boolean, ARRAY
 from sqlalchemy.orm import mapped_column
 from pgvector.sqlalchemy import Vector
 
@@ -19,9 +19,8 @@ class Prompt(Base):
 
     prompt_id = Column(Integer, primary_key=True, index=True)
     created_by_user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
-    prompt = Column(String, nullable=False)
-    prompt_embeding = mapped_column(Vector(384))
-    location_type = Column(String, nullable=False)
+    prompt = Column(ARRAY(String), nullable=False)
+    location_type = Column(ARRAY(String), nullable=False)
     created_at = Column(TIMESTAMP(timezone=True),server_default = text("now()"), nullable=False)
 
 
