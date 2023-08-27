@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from passlib.context import CryptContext
 
 from .. import schemas, models
@@ -24,7 +24,7 @@ def hash(password: str):
 def verify(password: str, hashed_password: str):
     return pwd_context.verify(password, hashed_password)
 
-@router.get('/', response_model=schemas.UsernameGen)
+@router.get('/generate', response_model=schemas.UsernameGen)
 def generate_username(db: Session = Depends(get_db)):
     query = db.query(models.User.username)
     generated_name = generate_name(name_generator)
@@ -32,6 +32,24 @@ def generate_username(db: Session = Depends(get_db)):
     while query.filter(models.User.username == generated_name).first():
         generated_name = generate_name(name_generator)
     return {"username": f"{generated_name.capitalize()}"}
+
+@router.get('/{user_id}', response_model=schemas.UserOut)
+def get_user(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.user_id == user_id).first()
+    prompts = db.query(models.Prompt).filter(models.Prompt.created_by_user_id == user_id).all()
+    
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user_out = schemas.UserOut(
+        user_id=user.user_id,
+        username=user.username,
+        created_at=user.created_at,
+        prompts=[schemas.Prompt.from_orm(prompt) for prompt in prompts]
+    )
+
+    return user_out
+
 
 @router.post('/', status_code=201, response_model=schemas.User)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):

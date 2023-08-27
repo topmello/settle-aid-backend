@@ -14,7 +14,7 @@ services:
   backend:
     image: australia-southeast2-docker.pkg.dev/fleet-fortress-395004/settle-aid/settle-aid-backend:latest
     ports:
-      - "7999:8000"
+      - "8000:8000"
     environment:
       - DATABASE_HOSTNAME=db
       - DATABASE_NAME=database

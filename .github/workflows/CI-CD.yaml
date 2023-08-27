@@ -2,9 +2,6 @@ name: Build and Push Images
 
 on:
   workflow_dispatch:   # Manual trigger
-  push:               # Push event
-    branches:
-      - deploy        # Only when pushed to 'deploy' branch
 
 jobs:
   build_push_images:

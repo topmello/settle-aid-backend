@@ -32,7 +32,7 @@ def softmax(x):
     return e_x / e_x.sum(axis=0)
 
 @router.post("/", response_model=list[schemas.SearchResult])
-async def search_by_query(query: schemas.Query, db: Session = Depends(get_db), current_user: schemas.User = Depends(oauth2.get_current_user)):
+async def search_by_query(query: schemas.Query, db: Session = Depends(get_db)):
     query_embeding = model.encode([query.query])[0]
 
     current_location = WKTElement(f'POINT({query.longitude} {query.latitude})', srid=4326)
@@ -76,6 +76,17 @@ async def search_by_query_seq(querys: schemas.QuerySeq, db: Session = Depends(ge
 
     for i, query in enumerate(querys.query):
         query_embeding = model.encode([query])[0]
+
+        
+        prompt = models.Prompt(
+            created_by_user_id=current_user.user_id,
+            prompt=query,
+            prompt_embeding=query_embeding,
+            location_type=querys.location_type[i]
+            )
+        db.add(prompt)
+        db.commit()
+
 
         # Dynamically get the correct model based on location type
         Model = LOCATION_TYPE_MODELS.get(querys.location_type[i])
@@ -128,6 +139,15 @@ async def search_by_query_seq(querys: schemas.QuerySeq, db: Session = Depends(ge
     for i, query in enumerate(querys.query):
         query_embeding = model.encode([query])[0]
 
+        prompt = models.Prompt(
+            created_by_user_id=current_user.user_id,
+            prompt=query,
+            prompt_embeding=query_embeding,
+            location_type=querys.location_type[i]
+            )
+        db.add(prompt)
+        db.commit()
+
         # Dynamically get the correct model based on location type
         Model = LOCATION_TYPE_MODELS.get(querys.location_type[i])
 
@@ -154,6 +174,7 @@ async def search_by_query_seq(querys: schemas.QuerySeq, db: Session = Depends(ge
         )
 
         locations = query_result.all()
+        
         if locations:
             similarities = [result.similarity for result in locations]
             probs = softmax(similarities)

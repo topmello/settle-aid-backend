@@ -11,6 +11,23 @@ class User(BaseModel):
     password: str
     created_at: datetime
 
+class Prompt(BaseModel):
+    prompt_id: int
+    created_by_user_id: int
+    prompt: str
+    location_type: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class UserOut(BaseModel):
+    user_id: int
+    username: str
+    created_at: datetime
+    prompts: list[Prompt]
+
 class Token(BaseModel):
     access_token: str
     token_type: str
