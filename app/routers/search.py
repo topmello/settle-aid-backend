@@ -12,7 +12,7 @@ from .. import models, schemas, oauth2
 
 router = APIRouter(
     prefix="/search",
-    tags=["search"],
+    tags=["Search"],
     responses={404: {"description": "Not found"}},
 )
 

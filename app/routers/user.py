@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 from passlib.context import CryptContext
 
-from .. import schemas, models
+from .. import schemas, models, oauth2
 
 from ..database import get_db
 
@@ -11,7 +11,7 @@ from models.name_generator  import name_generator, generate_name
 
 router = APIRouter(
     prefix='/user',
-    tags=["user"]
+    tags=["User"]
 )
 
 
@@ -34,7 +34,12 @@ def generate_username(db: Session = Depends(get_db)):
     return {"username": f"{generated_name.capitalize()}"}
 
 @router.get('/{user_id}', response_model=schemas.UserOut)
-def get_user(user_id: int, db: Session = Depends(get_db)):
+def get_user(user_id: int, db: Session = Depends(get_db), current_user=Depends(oauth2.get_current_user)):
+
+    # Check if user_id is the same as current_user
+    if user_id != current_user.user_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
     user = db.query(models.User).filter(models.User.user_id == user_id).first()
     prompts = db.query(models.Prompt).filter(models.Prompt.created_by_user_id == user_id).all()
     
