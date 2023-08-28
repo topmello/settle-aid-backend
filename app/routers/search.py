@@ -245,8 +245,8 @@ async def search_by_query_seq(querys: schemas.QuerySeq, db: Session = Depends(ge
     return results
 
 
-@router.post("/route/", response_class=HTMLResponse)
-async def search_by_query_seq(querys: schemas.QuerySeq, db: Session = Depends(get_db), current_user: schemas.User = Depends(oauth2.get_current_user)):
+@router.post("/route/", response_model=schemas.RouteOut)
+async def search_by_query_seq(querys: schemas.RouteQuery, db: Session = Depends(get_db), current_user: schemas.User = Depends(oauth2.get_current_user)):
 
     results = []
     seen_places = set()
@@ -325,9 +325,115 @@ async def search_by_query_seq(querys: schemas.QuerySeq, db: Session = Depends(ge
         raise HTTPException(status_code=404, detail="No results found")
 
     # Create route
-    coordinates = ';'.join([f"{location.longitude}, {location.latitude}" for location in results])
+    location_names = [location.name for location in results]
+    coordinates = [[location.longitude, location.latitude] for location in results]
+    coordinates_str = [f"{location.longitude}, {location.latitude}" for location in results]
     
-    route_coordinates = get_route(coordinates)['routes'][0]['geometry']['coordinates']
+    route = get_route(';'.join(coordinates_str), profile=querys.route_type)
+    route_coordinates = route['routes'][0]['geometry']['coordinates']
+
+    instructions = []
+    for leg in route['routes'][0]['legs']:
+        for step in leg['steps']:
+            instructions.append(step['maneuver']['instruction'])
+
+    duration = route['routes'][0]['duration']
+
+    out = schemas.RouteOut(
+        locations=location_names,
+        locations_coordinates=coordinates,
+        route=route_coordinates,
+        instructions=instructions,
+        duration=duration
+        )
+
+    return out
+
+@router.post("/route-map/", response_class=HTMLResponse)
+async def search_by_query_seq(querys: schemas.RouteQuery, db: Session = Depends(get_db), current_user: schemas.User = Depends(oauth2.get_current_user)):
+
+    results = []
+    seen_places = set()
+
+    prompt = models.Prompt(
+            created_by_user_id=current_user.user_id,
+            prompt=querys.query,
+            location_type=querys.location_type
+            )
+
+        
+    db.add(prompt)
+    db.commit()
+    db.refresh(prompt)
+    current_location = WKTElement(f'POINT({querys.longitude} {querys.latitude})', srid=4326)
+
+    for i, query in enumerate(querys.query):
+        query_embeding = model.encode([query])[0]
+
+        # Dynamically get the correct model based on location type
+        Model = LOCATION_TYPE_MODELS.get(querys.location_type[i])
+
+        if not Model:
+            raise HTTPException(status_code=404, detail="Location type not found")
+
+        query_result = (
+            db.query(
+                Model.id.label('id'),
+                Model.name.label('name'),
+                func.st_y(Model.coord).label('latitude'),
+                func.st_x(Model.coord).label('longitude'),
+                (1-Model.embedding.cosine_distance(query_embeding)).label('similarity')
+            )
+            .filter(func.ST_Distance(
+                func.ST_Transform(Model.coord, 3857), 
+                func.ST_Transform(current_location, 3857)
+                ) < querys.distance_threshold)
+            .filter((1-Model.embedding.cosine_distance(query_embeding)) > querys.similarity_threshold)
+            .filter(Model.name.notin_(seen_places))  # Exclude places already seen
+            .order_by(desc('similarity'))
+            .limit(10)
+            
+            
+        )
+
+        locations = query_result.all()
+        
+        if locations:
+            similarities = [result.similarity for result in locations]
+            probs = softmax(similarities)
+
+            chosen_idx = np.random.choice(len(locations), p=probs)
+            chosen_location = locations[chosen_idx]
+
+            results.append(chosen_location)
+            current_location = WKTElement(f'POINT({chosen_location.longitude} {chosen_location.latitude})', srid=4326)
+            seen_places.add(chosen_location.name)
+
+        else:
+            raise HTTPException(status_code=404, detail="No results found")
+        
+
+        prompt_location = PROMPT_LOCATION_TYPE_MODELS.get(querys.location_type[i])
+        insert_prompt_location = prompt_location(
+            prompt_id=prompt.prompt_id,
+            created_by_user_id=current_user.user_id,
+            location_id=chosen_location.id
+            )
+
+        db.add(insert_prompt_location)
+        db.commit()
+
+        
+
+    if results == []:
+        raise HTTPException(status_code=404, detail="No results found")
+
+    # Create route
+    coordinates_str = [f"{location.longitude}, {location.latitude}" for location in results]
+
+    route = get_route(';'.join(coordinates_str), profile=querys.route_type)
+    
+    route_coordinates = route['routes'][0]['geometry']['coordinates']
 
     # Create the folium map
     m = folium.Map(location=route_coordinates[0][::-1], zoom_start=15)

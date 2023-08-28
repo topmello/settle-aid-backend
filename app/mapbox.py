@@ -1,8 +1,10 @@
 import requests
-# Your Mapbox Access Token
-MAPBOX_ACCESS_TOKEN = 'pk.eyJ1IjoiamlyYXRoaXAiLCJhIjoiY2xsdTBoNzQ3MHdndzNzc3luaW03YmNseSJ9.CvqEW28-Dab5qUQ1MCQOgg'
 
-def get_route(coordinates, access_token=MAPBOX_ACCESS_TOKEN):
+from .config import settings
+# Your Mapbox Access Token
+MAPBOX_ACCESS_TOKEN = settings.MAPBOX_ACCESS_TOKEN
+
+def get_route(coordinates, profile='walking'):
     """
     Get the route between multiple locations using Mapbox API.
 
@@ -14,10 +16,11 @@ def get_route(coordinates, access_token=MAPBOX_ACCESS_TOKEN):
         route (dict): A dictionary containing the route data as GeoJSON.
     """
 
-    url = f"https://api.mapbox.com/directions/v5/mapbox/driving/{coordinates}"
+    url = f"https://api.mapbox.com/directions/v5/mapbox/{profile}/{coordinates}"
     params = {
         'geometries': 'geojson',
-        'access_token': access_token
+        'access_token': MAPBOX_ACCESS_TOKEN,
+        'steps': 'true'
     }
     response = requests.get(url, params=params)
     data = response.json()

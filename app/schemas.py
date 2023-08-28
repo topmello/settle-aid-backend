@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, validator, ValidationError
 from datetime import datetime
 
 class UserCreate(BaseModel):
@@ -45,6 +45,13 @@ class Query(BaseModel):
     distance_threshold: float
     similarity_threshold: float
 
+    @validator('location_type')
+    def check_location_type(cls, v):
+        allowed_location_types = ['landmark', 'restaurant', 'grocery', 'pharmacy']
+        if v not in allowed_location_types:
+            raise ValueError(f'location_type must be one of {allowed_location_types}')
+        return v
+
 class QuerySeq(BaseModel):
     query: list[str]
     location_type: list[str]
@@ -53,11 +60,37 @@ class QuerySeq(BaseModel):
     distance_threshold: float
     similarity_threshold: float
 
+    @validator('location_type')
+    def check_location_type(cls, v):
+
+        allowed_location_types = ['landmark', 'restaurant', 'grocery', 'pharmacy']
+        if not all(location_type in allowed_location_types for location_type in v):
+            raise ValueError(f'location_type must be one of {allowed_location_types}')
+        return v
+
+class RouteQuery(QuerySeq):
+    route_type: str = "walking"
+
+    @validator('route_type')
+    def check_route_type(cls, v):
+        allowed_route_types = ['driving', 'walking', 'cycling']
+        if v not in allowed_route_types:
+            raise ValueError(f'route_type must be one of {allowed_route_types}')
+        return v
+
+
 class SearchResult(BaseModel):
     name: str
     latitude: float
     longitude: float
     similarity: float
+
+class RouteOut(BaseModel):
+    locations: list[str]
+    locations_coordinates: list[list[float]]
+    route: list[list[float]]
+    instructions: list[str]
+    duration: float
 
 class UsernameGen(BaseModel):
     username: str
