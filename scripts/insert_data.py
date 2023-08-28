@@ -9,11 +9,13 @@ from app import models
 LOCATION_TYPE_MODELS = {
     "landmark": models.Landmark,
     "restaurant": models.Restaurant,
+    "grocery": models.Grocery,
 }
 
 LOCATION_TYPE_DATA = {
     "landmark": "data/landmarks.json",
     "restaurant": "data/restaurants_2019.json",
+    "grocery": "data/supermarkets.json",
 }
 
 def insert_into_table(location_type: str):
@@ -32,6 +34,5 @@ def insert_into_table(location_type: str):
     db.commit()
 
 if __name__ == "__main__":
-    location_types = ["landmark", "restaurant"]
-    for location_type in location_types:
+    for location_type in LOCATION_TYPE_MODELS.keys():
         insert_into_table(location_type)
