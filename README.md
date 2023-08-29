@@ -31,6 +31,21 @@ $ alembic upgrade head
 $ alembic downgrade base
 ```
 
+## Manually access DB
+```
+$ psql -U db_user -d database
+```
+
+## Backup database
+```
+$ docker exec -t db pg_dump -U db_user -d database > backup.sql
+```
+
+## Restore database
+```
+$ cat backup.sql | docker exec -i db psql -U db_user -d database
+```
+
 ## Insert data (inside backend container)
 ```
 $ python -m scripts.insert_data

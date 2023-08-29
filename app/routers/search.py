@@ -16,7 +16,7 @@ from ..database import get_db
 
 from ..mapbox import get_route
 
-from .. import models, schemas, oauth2
+from .. import models, schemas, oauth2, translation
 
 router = APIRouter(
     prefix="/search",
@@ -53,6 +53,9 @@ def softmax(x):
 
 @router.post("/", response_model=list[schemas.SearchResult])
 async def search_by_query(query: schemas.Query, db: Session = Depends(get_db)):
+
+    print(translation.translate_text("你好", "Chinese (Simplified)"))
+
     query_embeding = model.encode([query.query])[0]
 
     current_location = WKTElement(f'POINT({query.longitude} {query.latitude})', srid=4326)

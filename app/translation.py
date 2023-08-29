@@ -1,19 +1,24 @@
 import json
 import os
+from pathlib import Path
 from google.cloud import translate
 
+
 def get_code(source):
-    f = open('../data/lang_to_code.json')
-    codes = json.load(f)
+    parent_path = Path(__file__).parent.parent
+    file_path = parent_path / "data" / "lang_to_code.json"
+    with open(file_path, 'r') as f:
+        codes = json.load(f)
 
     for i in codes:
         if i == source:
-            print(codes[i])
+
             return codes[i]
 
 
 def translate_text(text, source, project_id="fleet-fortress-395004"):
-    credential_path = "./google_application_credentials.json"
+    parent_path = Path(__file__).parent
+    credential_path = str(parent_path / "google_application_credentials.json")
     os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = credential_path
 
     client = translate.TranslationServiceClient()
@@ -21,7 +26,6 @@ def translate_text(text, source, project_id="fleet-fortress-395004"):
     parent = f"projects/{project_id}/locations/{location}"
 
     lang_code = get_code(source)
-    print(lang_code)
 
     response = client.translate_text(
         request={
@@ -33,9 +37,10 @@ def translate_text(text, source, project_id="fleet-fortress-395004"):
         }
     )
 
-    for translation in response.translations:
-        print("Translated text: {}".format(translation.translated_text))
+
+    return response.translations[0].translated_text
+    
 
 
 
-translate_text("你好", "Chinese (Simplified)")
+#translate_text("你好", "Chinese (Simplified)")

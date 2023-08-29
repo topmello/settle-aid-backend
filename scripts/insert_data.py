@@ -10,12 +10,14 @@ LOCATION_TYPE_MODELS = {
     "landmark": models.Landmark,
     "restaurant": models.Restaurant,
     "grocery": models.Grocery,
+    "pharmacy": models.Pharmacy,
 }
 
 LOCATION_TYPE_DATA = {
     "landmark": "data/landmarks.json",
     "restaurant": "data/restaurants_2019.json",
     "grocery": "data/supermarkets.json",
+    "pharmacy": "data/pharmacies.json",
 }
 
 def insert_into_table(location_type: str):
