@@ -94,3 +94,7 @@ class RouteOut(BaseModel):
 
 class UsernameGen(BaseModel):
     username: str
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
