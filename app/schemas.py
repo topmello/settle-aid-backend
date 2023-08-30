@@ -87,8 +87,8 @@ class SearchResult(BaseModel):
 
 class RouteOut(BaseModel):
     locations: list[str]
-    locations_coordinates: list[list[float]]
-    route: list[list[float]]
+    locations_coordinates: list[dict[str, float]]
+    route: list[dict[str, float]]
     instructions: list[str]
     duration: float
 
