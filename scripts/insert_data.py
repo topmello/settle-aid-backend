@@ -20,6 +20,7 @@ LOCATION_TYPE_DATA = {
     "pharmacy": "data/pharmacies.json",
 }
 
+
 def insert_into_table(location_type: str):
     """Insert data into database"""
     file = LOCATION_TYPE_DATA.get(location_type)
@@ -28,13 +29,19 @@ def insert_into_table(location_type: str):
         raise ValueError("Location type not found")
 
     with open(file, 'r') as f:
-            data = json.load(f)
+        data = json.load(f)
 
     db = next(get_db())
-    stmt = insert(Model).values(data).on_conflict_do_nothing(index_elements=['id'])
+    stmt = insert(Model).values(
+        data).on_conflict_do_nothing(index_elements=['id'])
     db.execute(stmt)
     db.commit()
 
-if __name__ == "__main__":
+
+def main():
     for location_type in LOCATION_TYPE_MODELS.keys():
         insert_into_table(location_type)
+
+
+if __name__ == "__main__":
+    main()
