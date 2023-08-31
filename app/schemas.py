@@ -1,15 +1,18 @@
-from pydantic import BaseModel, validator, ValidationError
+from pydantic import BaseModel, ValidationError, field_validator
 from datetime import datetime
+
 
 class UserCreate(BaseModel):
     username: str
     password: str
+
 
 class User(BaseModel):
     user_id: int
     username: str
     password: str
     created_at: datetime
+
 
 class Prompt(BaseModel):
     prompt_id: int
@@ -28,13 +31,16 @@ class UserOut(BaseModel):
     created_at: datetime
     prompts: list[Prompt]
 
+
 class Token(BaseModel):
     access_token: str
     token_type: str
 
+
 class TokenData(BaseModel):
     user_id: int
     username: str
+
 
 class Query(BaseModel):
 
@@ -45,12 +51,15 @@ class Query(BaseModel):
     distance_threshold: float
     similarity_threshold: float
 
-    @validator('location_type')
+    @field_validator('location_type')
     def check_location_type(cls, v):
-        allowed_location_types = ['landmark', 'restaurant', 'grocery', 'pharmacy']
+        allowed_location_types = ['landmark',
+                                  'restaurant', 'grocery', 'pharmacy']
         if v not in allowed_location_types:
-            raise ValueError(f'location_type must be one of {allowed_location_types}')
+            raise ValueError(
+                f'location_type must be one of {allowed_location_types}')
         return v
+
 
 class QuerySeq(BaseModel):
     query: list[str]
@@ -60,22 +69,26 @@ class QuerySeq(BaseModel):
     distance_threshold: float
     similarity_threshold: float
 
-    @validator('location_type')
+    @field_validator('location_type')
     def check_location_type(cls, v):
 
-        allowed_location_types = ['landmark', 'restaurant', 'grocery', 'pharmacy']
+        allowed_location_types = ['landmark',
+                                  'restaurant', 'grocery', 'pharmacy']
         if not all(location_type in allowed_location_types for location_type in v):
-            raise ValueError(f'location_type must be one of {allowed_location_types}')
+            raise ValueError(
+                f'location_type must be one of {allowed_location_types}')
         return v
+
 
 class RouteQuery(QuerySeq):
     route_type: str = "walking"
 
-    @validator('route_type')
+    @field_validator('route_type')
     def check_route_type(cls, v):
         allowed_route_types = ['driving', 'walking', 'cycling']
         if v not in allowed_route_types:
-            raise ValueError(f'route_type must be one of {allowed_route_types}')
+            raise ValueError(
+                f'route_type must be one of {allowed_route_types}')
         return v
 
 
@@ -85,6 +98,7 @@ class SearchResult(BaseModel):
     longitude: float
     similarity: float
 
+
 class RouteOut(BaseModel):
     locations: list[str]
     locations_coordinates: list[dict[str, float]]
@@ -92,8 +106,10 @@ class RouteOut(BaseModel):
     instructions: list[str]
     duration: float
 
+
 class UsernameGen(BaseModel):
     username: str
+
 
 class LoginRequest(BaseModel):
     username: str

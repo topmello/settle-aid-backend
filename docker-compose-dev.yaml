@@ -1,11 +1,11 @@
-version: '3'
+version: "3"
 services:
   db:
     container_name: db
     build:
       context: .
       dockerfile: Dockerfile.db
-    image: australia-southeast2-docker.pkg.dev/fleet-fortress-395004/settle-aid/postgres-vec-geo:latest
+    image: jirathipk/postgres-vec-geo:latest
     restart: always
     environment:
       - POSTGRES_DB=database
@@ -20,11 +20,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.backend
-    image: australia-southeast2-docker.pkg.dev/fleet-fortress-395004/settle-aid/settle-aid-backend:latest
+    image: jirathipk/settle-aid-backend:latest
     ports:
       - "8000:8000"
     volumes:
-      - ./:/usr/src/app:ro
+      - ./:/usr/src/app
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     environment:
       - DATABASE_HOSTNAME=db

@@ -1,0 +1,22 @@
+name: Python application test with Docker
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Build the Docker images
+        run: docker-compose -f docker-compose-dev.yaml up -d --build
+
+      - name: Run pytest
+        run: docker exec backend pytest
+
+      - name: Stop and remove Docker container
+        run: docker-compose -f docker-compose-dev.yaml down
