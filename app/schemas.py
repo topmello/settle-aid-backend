@@ -114,3 +114,20 @@ class UsernameGen(BaseModel):
 class LoginRequest(BaseModel):
     username: str
     password: str
+
+
+class TranslateQuery(BaseModel):
+    query: str
+    language: str
+
+    @field_validator('language')
+    def check_lang(cls, v):
+        allowed_lang = ['Chinese (Simplified)', 'Hindi']
+        if v not in allowed_lang:
+            raise ValueError(
+                f'route_type must be one of {allowed_lang}')
+        return v
+
+
+class TranslateRes(BaseModel):
+    result: str

@@ -38,6 +38,15 @@ def test_generate_name(test_client):
     assert res.status_code == 200
 
 
+def test_translate(test_client):
+    res = test_client.post("translate", json={
+        "query": "你好",
+        "language": "Chinese (Simplified)"
+    })
+    assert res.status_code == 200
+    assert res.json()["result"] == "Hello"
+
+
 def test_create_user(test_client):
     res = test_client.post(
         "/user/", json={"username": "test", "password": "test"})

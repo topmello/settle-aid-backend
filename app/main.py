@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.dialects.postgresql import insert
 
 from .config import settings
-from .routers import auth, user, search
+from .routers import auth, user, search, translate
 from .database import get_db
 from . import models
 
@@ -26,6 +26,8 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(user.router)
 app.include_router(search.router)
+app.include_router(translate.router)
+
 
 @app.on_event("startup")
 async def startup_event():
@@ -34,6 +36,7 @@ async def startup_event():
     prompt = "Hello World"
     embed = search.model.encode([prompt])
     pass
+
 
 @app.get("/")
 async def root():
