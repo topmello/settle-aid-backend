@@ -36,6 +36,8 @@ services:
       - ALGORITHM=HS256
       - ACCESS_TOKEN_EXPIRE_MINUTES=30
       - MAPBOX_ACCESS_TOKEN=pk.eyJ1IjoiamlyYXRoaXAiLCJhIjoiY2xsdTBoNzQ3MHdndzNzc3luaW03YmNseSJ9.CvqEW28-Dab5qUQ1MCQOgg
+      - DOC_USERNAME=topmello
+      - DOC_PASSWORD=da7da0df508738e37f18
 
     depends_on:
       - db

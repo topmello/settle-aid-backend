@@ -28,7 +28,7 @@ class User(BaseModel):
 class Prompt(BaseModel):
     prompt_id: int
     created_by_user_id: int
-    prompt: list[str]
+    prompt: list[constr(max_length=50)]
     location_type: list[str]
     created_at: datetime
 
@@ -73,7 +73,7 @@ class Query(BaseModel):
 
 
 class QuerySeq(BaseModel):
-    query: list[str]
+    query: list[constr(max_length=50)]
     location_type: list[str]
     longitude: float
     latitude: float
@@ -123,7 +123,7 @@ class UsernameGen(BaseModel):
 
 
 class TranslateQuery(BaseModel):
-    texts: list[str]
+    texts: list[constr(max_length=50)]
 
 
 class TranslateRes(BaseModel):

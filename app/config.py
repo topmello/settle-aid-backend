@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     ALGORITHM: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int
     MAPBOX_ACCESS_TOKEN: str
+    DOC_USERNAME: str
+    DOC_PASSWORD: str
 
 
 settings = Settings()

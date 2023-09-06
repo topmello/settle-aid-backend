@@ -1,61 +1,77 @@
-# Settle-Aid-backend
+# Settle-Aid-backend 🚠
+
+👉 [Backend Dev doc](https://topmello.github.io/docs/category/backend)
+
+👉 [API doc](https://api.settle-aid.tech/)
+
+- username: topmello
+- password: da7da0df508738e37f18
 
 ## Development container
 
 ### Start containers
-```
-$ docker-compose -f docker-compose-dev.yaml up -d
+
+```bash
+docker-compose -f docker-compose-dev.yaml up -d
 ```
 
 To force rebuild: add `--build` tag
 
 ### Stop containers
-```
-$ docker-compose -f docker-compose-dev.yaml down
+
+```bash
+docker-compose -f docker-compose-dev.yaml down
 ```
 
 To delete volume(this will delete data in the database): add `-v` tag
 
 ## Local Swagger Docs
+
 After start the container, it will be available at
-http://localhost:8000/docs
+http://localhost:8000/
 
 ## Update database schema (inside backend container)
 
-```
-$ alembic upgrade head
+```bash
+alembic upgrade head
 ```
 
 ## Clean up database
-```
-$ alembic downgrade base
+
+```bash
+alembic downgrade base
 ```
 
 ## Manually access DB
-```
-$ psql -U db_user -d database
+
+```bash
+psql -U db_user -d database
 ```
 
 ## Backup database
-```
-$ docker exec -t db pg_dump -U db_user -d database > backup.sql
+
+```bash
+docker exec -t db pg_dump -U db_user -d database > backup.sql
 ```
 
 ## Restore database
-```
-$ cat backup.sql | docker exec -i db psql -U db_user -d database
+
+```bash
+cat backup.sql | docker exec -i db psql -U db_user -d database
 ```
 
 ## Insert data (inside backend container)
-```
-$ python -m scripts.insert_data
+
+```bash
+python -m scripts.insert_data
 ```
 
 ## For deployment in VM
-```
-$ sudo docker-compose pull
+
+```bash
+sudo docker-compose pull
 ```
 
-```
-$ sudo docker-compose -p settle-aid up -d
+```bash
+sudo docker-compose -p settle-aid up -d
 ```

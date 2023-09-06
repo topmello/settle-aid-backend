@@ -27,10 +27,10 @@ def test_client():
     command.downgrade(alembic_config, "base")
 
 
-def test_root(test_client):
-
+def test_access_docs(test_client):
     res = test_client.get("/")
-    assert res.status_code == 200
+    assert res.status_code == 401, "Expected 401 Unauthorized but got another status code"
+    assert "WWW-Authenticate" in res.headers, "Expected 'WWW-Authenticate' header in the response"
 
 
 def test_generate_name(test_client):
@@ -40,17 +40,17 @@ def test_generate_name(test_client):
 
 def test_translate(test_client):
     res = test_client.post("translate", json={
-        "text": ["你好"]
+        "texts": ["你好"]
     })
     assert res.status_code == 200
-    assert res.json()["result"] == "Hello"
+    assert res.json()["results"] == ["Hello"]
 
 
 def test_create_user(test_client):
     res = test_client.post(
         "/user/", json={"username": "test", "password": "test"})
     if res.status_code == 400:
-        assert res.json()["detail"] == "Email already registered"
+        assert res.json()["detail"] == "Username already registered"
     if res.status_code == 201:
         assert res.json()["username"] == "test"
 
