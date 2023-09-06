@@ -1,10 +1,21 @@
-from pydantic import BaseModel, ValidationError, field_validator
+from pydantic import BaseModel, ValidationError, field_validator, constr
 from datetime import datetime
 
 
 class UserCreate(BaseModel):
-    username: str
-    password: str
+    username: constr(max_length=20, min_length=4,
+                     pattern="^[a-zA-Z][a-zA-Z0-9_]{3,19}$",
+                     to_lower=True)
+    password: constr(max_length=20, min_length=4,
+                     pattern="^[a-zA-Z0-9!@#$%^&*]{4,20}$")
+
+
+class LoginRequest(BaseModel):
+    username: constr(max_length=20, min_length=4,
+                     pattern="^[a-zA-Z][a-zA-Z0-9_]{3,19}$",
+                     to_lower=True)
+    password: constr(max_length=20, min_length=4,
+                     pattern="^[a-zA-Z0-9!@#$%^&*]{4,20}$")
 
 
 class User(BaseModel):
@@ -111,23 +122,9 @@ class UsernameGen(BaseModel):
     username: str
 
 
-class LoginRequest(BaseModel):
-    username: str
-    password: str
-
-
 class TranslateQuery(BaseModel):
-    query: str
-    language: str
-
-    @field_validator('language')
-    def check_lang(cls, v):
-        allowed_lang = ['Chinese (Simplified)', 'Hindi']
-        if v not in allowed_lang:
-            raise ValueError(
-                f'route_type must be one of {allowed_lang}')
-        return v
+    texts: list[str]
 
 
 class TranslateRes(BaseModel):
-    result: str
+    results: list[str]

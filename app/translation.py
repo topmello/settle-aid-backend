@@ -1,40 +1,30 @@
 import json
 import os
 from pathlib import Path
-from google.cloud import translate
+from google.cloud import translate_v2 as translate
+# https://cloud.google.com/translate/docs/basic/translating-text#translate_translate_text-python
+
+parent_path = Path(__file__).parent.parent
+credential_path = str(parent_path / "data" /
+                      "google_application_credentials.json")
+os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = credential_path
+
+translate_client = translate.Client()
+
+TARGET_LANG = "en"
 
 
-def get_code(source, parent_path):
-    file_path = parent_path / "data" / "lang_to_code.json"
-    with open(file_path, 'r') as f:
-        codes = json.load(f)
+def translate_text(text: str) -> dict:
 
-    for i in codes:
-        if i == source:
+    if isinstance(text, bytes):
+        text = text.decode("utf-8")
 
-            return codes[i]
+    result = translate_client.translate(text, target_language=TARGET_LANG)
 
-
-def translate_text(text, source, project_id="fleet-fortress-395004"):
-    parent_path = Path(__file__).parent.parent
-    credential_path = str(parent_path / "data" / "google_application_credentials.json")
-    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = credential_path
-
-    client = translate.TranslationServiceClient()
-    location = "global"
-    parent = f"projects/{project_id}/locations/{location}"
-
-    lang_code = get_code(source, parent_path)
-
-    response = client.translate_text(
-        request={
-            "parent": parent,
-            "contents": [text],
-            "mime_type": "text/plain",
-            "source_language_code": lang_code,
-            "target_language_code": "en",
-        }
-    )
+    return result["translatedText"]
 
 
-    return response.translations[0].translated_text
+def translate_list(text_list: list[str]) -> list[str]:
+    results = [translate_text(result) for result in text_list]
+
+    return results

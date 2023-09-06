@@ -9,11 +9,12 @@ import numpy as np
 
 from sentence_transformers import SentenceTransformer
 
+from ..limiter import rate_limited_route
 from ..database import get_db
 
 from ..mapbox import get_route
 
-from .. import models, schemas, oauth2, translation
+from .. import models, schemas, oauth2
 
 router = APIRouter(
     prefix="/search",
@@ -39,24 +40,19 @@ PROMPT_LOCATION_TYPE_MODELS = {
 }
 
 
-
 def softmax(x):
     """Compute softmax values for each sets of scores in x."""
     e_x = np.exp(x - np.max(x))
     return e_x / e_x.sum(axis=0)
 
 
-
-
-@router.post("/", response_model=list[schemas.SearchResult])
+# @router.post("/", response_model=list[schemas.SearchResult])
 async def search_by_query(query: schemas.Query, db: Session = Depends(get_db)):
-
-    print(translation.translate_text("你好", "Chinese (Simplified)"))
 
     query_embeding = model.encode([query.query])[0]
 
-    current_location = WKTElement(f'POINT({query.longitude} {query.latitude})', srid=4326)
-
+    current_location = WKTElement(
+        f'POINT({query.longitude} {query.latitude})', srid=4326)
 
     # Dynamically get the correct model based on location type
     Model = LOCATION_TYPE_MODELS.get(query.location_type)
@@ -73,9 +69,9 @@ async def search_by_query(query: schemas.Query, db: Session = Depends(get_db)):
             (1-Model.embedding.cosine_distance(query_embeding)).label('similarity')
         )
         .filter(func.ST_Distance(
-            func.ST_Transform(Model.coord, 3857), 
+            func.ST_Transform(Model.coord, 3857),
             func.ST_Transform(current_location, 3857)
-            ) < query.distance_threshold)
+        ) < query.distance_threshold)
         .filter((1-Model.embedding.cosine_distance(query_embeding)) > query.similarity_threshold)
         .order_by(desc('similarity'))
         .limit(10)
@@ -89,22 +85,26 @@ async def search_by_query(query: schemas.Query, db: Session = Depends(get_db)):
 
 
 @router.post("/route/", response_model=schemas.RouteOut)
-async def search_by_query_seq(querys: schemas.RouteQuery, db: Session = Depends(get_db), current_user: schemas.User = Depends(oauth2.get_current_user)):
+async def search_by_query_seq(
+        querys: schemas.RouteQuery,
+        db: Session = Depends(get_db),
+        current_user: schemas.User = Depends(oauth2.get_current_user),
+        _rate_limited: bool = Depends(rate_limited_route)):
 
     results = []
     seen_places = set()
 
     prompt = models.Prompt(
-            created_by_user_id=current_user.user_id,
-            prompt=querys.query,
-            location_type=querys.location_type
-            )
+        created_by_user_id=current_user.user_id,
+        prompt=querys.query,
+        location_type=querys.location_type
+    )
 
-        
     db.add(prompt)
     db.commit()
     db.refresh(prompt)
-    current_location = WKTElement(f'POINT({querys.longitude} {querys.latitude})', srid=4326)
+    current_location = WKTElement(
+        f'POINT({querys.longitude} {querys.latitude})', srid=4326)
 
     for i, query in enumerate(querys.query):
         query_embeding = model.encode([query])[0]
@@ -113,7 +113,8 @@ async def search_by_query_seq(querys: schemas.RouteQuery, db: Session = Depends(
         Model = LOCATION_TYPE_MODELS.get(querys.location_type[i])
 
         if not Model:
-            raise HTTPException(status_code=404, detail="Location type not found")
+            raise HTTPException(
+                status_code=404, detail="Location type not found")
 
         query_result = (
             db.query(
@@ -124,19 +125,20 @@ async def search_by_query_seq(querys: schemas.RouteQuery, db: Session = Depends(
                 (1-Model.embedding.cosine_distance(query_embeding)).label('similarity')
             )
             .filter(func.ST_Distance(
-                func.ST_Transform(Model.coord, 3857), 
+                func.ST_Transform(Model.coord, 3857),
                 func.ST_Transform(current_location, 3857)
-                ) < querys.distance_threshold)
+            ) < querys.distance_threshold)
             .filter((1-Model.embedding.cosine_distance(query_embeding)) > querys.similarity_threshold)
-            .filter(Model.name.notin_(seen_places))  # Exclude places already seen
+            # Exclude places already seen
+            .filter(Model.name.notin_(seen_places))
             .order_by(desc('similarity'))
             .limit(10)
-            
-            
+
+
         )
 
         locations = query_result.all()
-        
+
         if locations:
             similarities = [result.similarity for result in locations]
             probs = softmax(similarities)
@@ -145,39 +147,42 @@ async def search_by_query_seq(querys: schemas.RouteQuery, db: Session = Depends(
             chosen_location = locations[chosen_idx]
 
             results.append(chosen_location)
-            current_location = WKTElement(f'POINT({chosen_location.longitude} {chosen_location.latitude})', srid=4326)
+            current_location = WKTElement(
+                f'POINT({chosen_location.longitude} {chosen_location.latitude})', srid=4326)
             seen_places.add(chosen_location.name)
 
         else:
             raise HTTPException(status_code=404, detail="No results found")
-        
 
-        prompt_location = PROMPT_LOCATION_TYPE_MODELS.get(querys.location_type[i])
+        prompt_location = PROMPT_LOCATION_TYPE_MODELS.get(
+            querys.location_type[i])
         insert_prompt_location = prompt_location(
             prompt_id=prompt.prompt_id,
             created_by_user_id=current_user.user_id,
             location_id=chosen_location.id
-            )
+        )
 
         db.add(insert_prompt_location)
         db.commit()
-
-        
 
     if results == []:
         raise HTTPException(status_code=404, detail="No results found")
 
     # Create route
     location_names = [location.name for location in results]
-    coordinates = [{"latitude": querys.latitude, "longitude": querys.longitude}]
+    coordinates = [{"latitude": querys.latitude,
+                    "longitude": querys.longitude}]
     for location in results:
-        coordinates.append({"latitude": location.latitude, "longitude": location.longitude})
+        coordinates.append({"latitude": location.latitude,
+                           "longitude": location.longitude})
 
-    coordinates_str = [f"{c['longitude']}, {c['latitude']}" for c in coordinates]
-    
+    coordinates_str = [
+        f"{c['longitude']}, {c['latitude']}" for c in coordinates]
+
     route = get_route(';'.join(coordinates_str), profile=querys.route_type)
     route_coordinates = route['routes'][0]['geometry']['coordinates']
-    route_coordinates = [{"latitude": coord[1], "longitude": coord[0]} for coord in route_coordinates]
+    route_coordinates = [{"latitude": coord[1], "longitude": coord[0]}
+                         for coord in route_coordinates]
 
     instructions = []
     for leg in route['routes'][0]['legs']:
@@ -192,6 +197,6 @@ async def search_by_query_seq(querys: schemas.RouteQuery, db: Session = Depends(
         route=route_coordinates,
         instructions=instructions,
         duration=duration
-        )
+    )
 
     return out

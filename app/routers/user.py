@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 from passlib.context import CryptContext
+from ..limiter import rate_limited_route
 
 from .. import schemas, models, oauth2
 
@@ -27,7 +28,7 @@ def verify(password: str, hashed_password: str):
 
 
 @router.get('/generate', response_model=schemas.UsernameGen)
-def generate_username(db: Session = Depends(get_db)):
+def generate_username(db: Session = Depends(get_db), _rate_limited: bool = Depends(rate_limited_route)):
     query = db.query(models.User.username)
     generated_name = generate_name(name_generator)
     # check if its unqiue
@@ -61,10 +62,11 @@ def get_user(user_id: int, db: Session = Depends(get_db), current_user=Depends(o
 
 
 @router.post('/', status_code=201, response_model=schemas.User)
-def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+def create_user(user: schemas.UserCreate, db: Session = Depends(get_db), _rate_limited: bool = Depends(rate_limited_route)):
 
     if db.query(models.User).filter(models.User.username == user.username).first():
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise HTTPException(
+            status_code=400, detail="Username already registered")
 
     # Hash password
     hashed_password = hash(user.password)

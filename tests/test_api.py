@@ -40,8 +40,7 @@ def test_generate_name(test_client):
 
 def test_translate(test_client):
     res = test_client.post("translate", json={
-        "query": "你好",
-        "language": "Chinese (Simplified)"
+        "text": ["你好"]
     })
     assert res.status_code == 200
     assert res.json()["result"] == "Hello"
