@@ -48,13 +48,22 @@ class Token(BaseModel):
     token_type: str
 
 
+class TokenV2(BaseModel):
+    access_token: str
+    token_type: str
+    refresh_token: str
+
+
+class RefreshTokenIn(BaseModel):
+    refresh_token: str
+
+
 class TokenData(BaseModel):
     user_id: int
     username: str
 
 
 class Query(BaseModel):
-
     query: str
     location_type: str
     longitude: float
@@ -84,7 +93,9 @@ class QuerySeq(BaseModel):
     def check_location_type(cls, v):
 
         allowed_location_types = ['landmark',
-                                  'restaurant', 'grocery', 'pharmacy']
+                                  'restaurant',
+                                  'grocery',
+                                  'pharmacy']
         if not all(location_type in allowed_location_types for location_type in v):
             raise ValueError(
                 f'location_type must be one of {allowed_location_types}')

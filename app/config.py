@@ -1,4 +1,4 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     MAPBOX_ACCESS_TOKEN: str
     DOC_USERNAME: str
     DOC_PASSWORD: str
+    REFRESH_SECRET_KEY: str
+    REFRESH_TOKEN_EXPIRE_DAYS: int
+
+    model_config = SettingsConfigDict(env_file='.env')
 
 
 settings = Settings()

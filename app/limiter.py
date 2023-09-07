@@ -22,3 +22,5 @@ def rate_limited_route(request: Request, limiter_instance: Limiter = Depends(get
     except RateLimitExceeded as e:
         raise HTTPException(status_code=429, detail="Too Many Requests")
     return True
+
+
