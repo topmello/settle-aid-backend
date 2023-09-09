@@ -1,6 +1,6 @@
 from .database import Base
 
-from sqlalchemy import Column, Integer, String, TIMESTAMP, text, ForeignKey, Boolean, ARRAY
+from sqlalchemy import Column, Integer, String, Float, TIMESTAMP, text, ForeignKey, Boolean, ARRAY
 from sqlalchemy.orm import mapped_column
 from pgvector.sqlalchemy import Vector
 
@@ -20,8 +20,8 @@ class User(Base):
 class RefreshToken(Base):
     __tablename__ = "refresh_tokens"
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey('users.user_id'), nullable=False)
+    user_id = Column(Integer, ForeignKey('users.user_id'),
+                     nullable=False, primary_key=True)
     token = Column(String, nullable=False)
     expires_at = Column(TIMESTAMP(timezone=True), nullable=False)
 
@@ -33,9 +33,49 @@ class Prompt(Base):
     created_by_user_id = Column(
         Integer, ForeignKey("users.user_id"), nullable=False)
     prompt = Column(ARRAY(String), nullable=False)
+    negative_prompt = Column(ARRAY(String), nullable=True)
     location_type = Column(ARRAY(String), nullable=False)
     created_at = Column(TIMESTAMP(timezone=True),
                         server_default=text("now()"), nullable=False)
+
+
+class Route(Base):
+    __tablename__ = "routes"
+
+    route_id = Column(Integer, primary_key=True, index=True)
+    created_by_user_id = Column(
+        Integer, ForeignKey("users.user_id"), nullable=False)
+    locations = Column(ARRAY(String), nullable=False)
+    location_latitudes = Column(ARRAY(Float), nullable=False)
+    location_longitudes = Column(ARRAY(Float), nullable=False)
+    route_latitudes = Column(ARRAY(Float), nullable=False)
+    route_longitudes = Column(ARRAY(Float), nullable=False)
+    instructions = Column(ARRAY(String), nullable=False)
+    duration = Column(Integer, nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True),
+                        server_default=text("now()"), nullable=False)
+
+
+class User_Route_Vote(Base):
+    __tablename__ = "user_route_votes"
+
+    user_id = Column(Integer, ForeignKey("users.user_id"),
+                     nullable=False, primary_key=True)
+    route_id = Column(Integer, ForeignKey("routes.route_id"),
+                      nullable=False, primary_key=True)
+    created_at = Column(TIMESTAMP(timezone=True),
+                        server_default=text("now()"), nullable=False)
+
+
+class Prompt_Route(Base):
+    __tablename__ = "prompt_routes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    prompt_id = Column(Integer, ForeignKey(
+        "prompts.prompt_id"), nullable=False)
+    created_by_user_id = Column(
+        Integer, ForeignKey("users.user_id"), nullable=False)
+    route_id = Column(Integer, ForeignKey("routes.route_id"), nullable=False)
 
 
 class Landmark(Base):
@@ -87,19 +127,6 @@ class Prompt_Landmark(Base):
                         server_default=text("now()"), nullable=False)
 
 
-class Prompt_Landmark_Vote(Base):
-    __tablename__ = "prompt_landmark_votes"
-
-    id = Column(Integer, primary_key=True)
-    prompt_location_id = Column(Integer, ForeignKey(
-        "prompt_landmarks.id"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
-    # True for upvote, False for downvote
-    vote = Column(Boolean, nullable=False)
-    created_at = Column(TIMESTAMP(timezone=True),
-                        server_default=text("now()"), nullable=False)
-
-
 class Prompt_Restaurant(Base):
     __tablename__ = "prompt_restaurants"
 
@@ -109,19 +136,6 @@ class Prompt_Restaurant(Base):
     created_by_user_id = Column(
         Integer, ForeignKey("users.user_id"), nullable=False)
     location_id = Column(Integer, ForeignKey("restaurants.id"), nullable=False)
-    created_at = Column(TIMESTAMP(timezone=True),
-                        server_default=text("now()"), nullable=False)
-
-
-class Prompt_Restaurant_Vote(Base):
-    __tablename__ = "prompt_restaurant_votes"
-
-    id = Column(Integer, primary_key=True)
-    prompt_location_id = Column(Integer, ForeignKey(
-        "prompt_restaurants.id"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
-    # True for upvote, False for downvote
-    vote = Column(Boolean, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True),
                         server_default=text("now()"), nullable=False)
 
@@ -139,19 +153,6 @@ class Prompt_Grocery(Base):
                         server_default=text("now()"), nullable=False)
 
 
-class Prompt_Grocery_Vote(Base):
-    __tablename__ = "prompt_grocery_votes"
-
-    id = Column(Integer, primary_key=True)
-    prompt_location_id = Column(Integer, ForeignKey(
-        "prompt_groceries.id"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
-    # True for upvote, False for downvote
-    vote = Column(Boolean, nullable=False)
-    created_at = Column(TIMESTAMP(timezone=True),
-                        server_default=text("now()"), nullable=False)
-
-
 class Prompt_Pharmacy(Base):
     __tablename__ = "prompt_pharmacies"
 
@@ -161,18 +162,5 @@ class Prompt_Pharmacy(Base):
     created_by_user_id = Column(
         Integer, ForeignKey("users.user_id"), nullable=False)
     location_id = Column(Integer, ForeignKey("pharmacies.id"), nullable=False)
-    created_at = Column(TIMESTAMP(timezone=True),
-                        server_default=text("now()"), nullable=False)
-
-
-class Prompt_Pharmacy_Vote(Base):
-    __tablename__ = "prompt_pharmacy_votes"
-
-    id = Column(Integer, primary_key=True)
-    prompt_location_id = Column(Integer, ForeignKey(
-        "prompt_pharmacies.id"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
-    # True for upvote, False for downvote
-    vote = Column(Boolean, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True),
                         server_default=text("now()"), nullable=False)

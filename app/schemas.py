@@ -36,6 +36,40 @@ class Prompt(BaseModel):
         from_attributes = True
 
 
+class PromptV2(BaseModel):
+    prompt_id: int
+    created_by_user_id: int
+    prompt: list[constr(max_length=50)]
+    negative_prompt: list[constr(max_length=50)]
+    location_type: list[str]
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class RouteOut(BaseModel):
+    locations: list[str]
+    locations_coordinates: list[dict[str, float]]
+    route: list[dict[str, float]]
+    instructions: list[str]
+    duration: float
+
+
+class RouteOutV2(BaseModel):
+    route_id: int
+    locations: list[str]
+    locations_coordinates: list[dict[str, float]]
+    route: list[dict[str, float]]
+    instructions: list[str]
+    duration: float
+
+
+class RouteVoteOut(BaseModel):
+    route: RouteOutV2
+    num_votes: int
+
+
 class UserOut(BaseModel):
     user_id: int
     username: str
@@ -51,7 +85,9 @@ class Token(BaseModel):
 class TokenV2(BaseModel):
     access_token: str
     token_type: str
+    access_token_expire: datetime
     refresh_token: str
+    refresh_token_expire: datetime
 
 
 class RefreshTokenIn(BaseModel):
@@ -114,19 +150,25 @@ class RouteQuery(QuerySeq):
         return v
 
 
+class RouteQueryV2(QuerySeq):
+    negative_query: list[constr(max_length=50)]
+    negative_similarity_threshold: float
+    route_type: str = "walking"
+
+    @field_validator('route_type')
+    def check_route_type(cls, v):
+        allowed_route_types = ['driving', 'walking', 'cycling']
+        if v not in allowed_route_types:
+            raise ValueError(
+                f'route_type must be one of {allowed_route_types}')
+        return v
+
+
 class SearchResult(BaseModel):
     name: str
     latitude: float
     longitude: float
     similarity: float
-
-
-class RouteOut(BaseModel):
-    locations: list[str]
-    locations_coordinates: list[dict[str, float]]
-    route: list[dict[str, float]]
-    instructions: list[str]
-    duration: float
 
 
 class UsernameGen(BaseModel):
@@ -139,3 +181,8 @@ class TranslateQuery(BaseModel):
 
 class TranslateRes(BaseModel):
     results: list[str]
+
+
+class VoteIn(BaseModel):
+    route_id: int
+    vote: bool

@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
+from sqlalchemy import func
 from passlib.context import CryptContext
+from typing import List, Dict
 from ..limiter import rate_limited_route
 
 from .. import schemas, models, oauth2
@@ -27,7 +29,7 @@ def verify(password: str, hashed_password: str):
     return pwd_context.verify(password, hashed_password)
 
 
-@router.get('/generate', response_model=schemas.UsernameGen)
+@router.get('/generate/', response_model=schemas.UsernameGen)
 def generate_username(db: Session = Depends(get_db), _rate_limited: bool = Depends(rate_limited_route)):
     query = db.query(models.User.username)
     generated_name = generate_name(name_generator)
@@ -37,8 +39,8 @@ def generate_username(db: Session = Depends(get_db), _rate_limited: bool = Depen
     return {"username": f"{generated_name.capitalize()}"}
 
 
-@router.get('/{user_id}', response_model=schemas.UserOut)
-def get_user(user_id: int, db: Session = Depends(get_db), current_user=Depends(oauth2.get_current_user)):
+@router.get('/{user_id}/', response_model=schemas.UserOut)
+def get_user(user_id: int, db: Session = Depends(get_db), current_user=Depends(oauth2.get_current_user), _rate_limited: bool = Depends(rate_limited_route)):
 
     # Check if user_id is the same as current_user
     if user_id != current_user.user_id:
@@ -46,7 +48,7 @@ def get_user(user_id: int, db: Session = Depends(get_db), current_user=Depends(o
 
     user = db.query(models.User).filter(models.User.user_id == user_id).first()
     prompts = db.query(models.Prompt).filter(
-        models.Prompt.created_by_user_id == user_id).all()
+        models.Prompt.created_by_user_id == user_id).limit(10).all()
 
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")

@@ -12,7 +12,7 @@ from slowapi.errors import RateLimitExceeded
 from sqlalchemy.orm import Session
 
 from .config import settings
-from .routers import auth, user, search, translate, track
+from .routers import auth, user, search, translate, track, vote, route
 from .database import get_db
 from . import models
 from .limiter import limiter
@@ -23,20 +23,22 @@ import json
 description = """
 # Authentication 🔑
 
-- Login to the API to get an access token.
+- Login Endpoint (/login): Authenticates the user and returns a JWT token. If the user exceeds the maximum allowed login attempts, their IP is blocked for a specified duration.
+- Login V2 Endpoint (/v2/login): An enhanced version of the login endpoint. In addition to authenticating the user and returning a JWT token, it also provides a refresh token. If a user already has a refresh token, the old one is deleted and a new one is generated.
+- Refresh Token Endpoint (/v2/token/refresh): Allows the user to get a new JWT token using their refresh token. The refresh token remains the same.
 
 # User 👩‍🦳
 
-- Generate a random username.
-- Get user information.
-- Create a new user.
+- Generate Username Endpoint (/generate): Generates a unique username. If the generated name exists in the database, it keeps generating until a unique name is found.
+- Get User Details Endpoint (/{user_id}): Retrieves the details of a user and their history based on the provided user ID.
+- Create User Endpoint (/): Creates a new user in the database.
 
 
 # Search Route 🛵
-- Generate route given list of prompts and locations
+- Search by Query Sequence Endpoint (/route/): Searches for a sequence of locations based on the user's queries. For each query, it finds a location that matches the query's embedding and then creates a route based on the sequence of found locations.
 
 # Translate 🇦🇺
-- Implemented using Google Translate API
+- Translate Endpoint (/): Translates a list of texts into the target language (English) using the Google Cloud Translation API.
 
 # Track 🛤️
 - WebSocket connection to track a user's location
@@ -78,6 +80,8 @@ app.include_router(auth.router)
 app.include_router(user.router)
 app.include_router(search.router)
 app.include_router(translate.router)
+app.include_router(vote.router)
+app.include_router(route.router)
 app.mount("/track", track.subapi)
 
 

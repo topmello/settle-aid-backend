@@ -11,6 +11,7 @@ from .. import models, schemas, oauth2
 from .user import verify
 
 router = APIRouter(
+    prefix="/login",
     tags=["Authentication"]
 )
 
@@ -34,7 +35,7 @@ def check_blocked_ip(request: Request):
     return True
 
 
-@router.post('/login', response_model=schemas.Token)
+@router.post('/', response_model=schemas.Token)
 def login(
         user_credentials: schemas.LoginRequest,
         request: Request,
@@ -71,7 +72,7 @@ def login(
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@router.post('/v2/login', response_model=schemas.TokenV2)
+@router.post('/v2/', response_model=schemas.TokenV2)
 def login(
         user_credentials: schemas.LoginRequest,
         request: Request,
@@ -109,7 +110,7 @@ def login(
         db.commit()
 
     # Generate JWT token
-    access_token = oauth2.create_access_token(data={
+    access_token, access_token_expire = oauth2.create_access_token_v2(data={
         "user_id": user_query.first().user_id,
         "username": user_credentials.username
     })
@@ -124,16 +125,40 @@ def login(
     db.add(db_refresh_token)
     db.commit()
 
-    return {"access_token": access_token, "token_type": "bearer", "refresh_token": refresh_token}
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "access_token_expire": access_token_expire,
+        "refresh_token": refresh_token,
+        "refresh_token_expire": refresh_token_expiry
+    }
 
 
-@router.post('/v2/token/refresh', response_model=schemas.TokenV2)
-def refresh_token(refresh_token: schemas.RefreshTokenIn, db: Session = Depends(get_db)):
+@router.post('/v2/refresh/', response_model=schemas.TokenV2)
+def refresh_token(
+        refresh_token: schemas.RefreshTokenIn,
+        db: Session = Depends(get_db),
+        _rate_limited: bool = Depends(rate_limited_route),
+        _ip_check: bool = Depends(check_blocked_ip)):
+
     user_id = oauth2.verify_refresh_token(refresh_token.refresh_token, db)
 
     # Generate a new access token
     user = db.query(models.User).filter(models.User.user_id == user_id).first()
-    access_token = oauth2.create_access_token(
+
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    access_token, access_token_expire = oauth2.create_access_token_v2(
         data={"user_id": user.user_id, "username": user.username})
 
-    return {"access_token": access_token, "token_type": "bearer", "refresh_token": refresh_token.refresh_token}
+    re_token_query = db.query(models.RefreshToken).filter(
+        models.RefreshToken.user_id == user_id).first()
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "access_token_expire": access_token_expire,
+        "refresh_token": re_token_query.token,
+        "refresh_token_expire": re_token_query.expires_at
+    }
