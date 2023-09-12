@@ -12,7 +12,7 @@ from slowapi.errors import RateLimitExceeded
 from sqlalchemy.orm import Session
 
 from .config import settings
-from .routers import auth, user, search, translate, track, vote, route
+from .routers import auth, user, search, translate, track_sio, track, vote, route
 from .database import get_db
 from . import models
 from .limiter import limiter
@@ -82,7 +82,8 @@ app.include_router(search.router)
 app.include_router(translate.router)
 app.include_router(vote.router)
 app.include_router(route.router)
-app.mount("/track", track.subapi)
+app.include_router(track.router)
+app.mount("/track-sio", track_sio.subapi)
 
 
 @app.on_event("startup")

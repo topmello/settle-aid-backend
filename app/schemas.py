@@ -186,3 +186,8 @@ class TranslateRes(BaseModel):
 class VoteIn(BaseModel):
     route_id: int
     vote: bool
+
+
+class TrackRoomOut(BaseModel):
+    room_id: str
+    pin: str
