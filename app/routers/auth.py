@@ -28,7 +28,7 @@ def login(
         models.User.username == user_credentials.username)
 
     if user_query.first() == None or not verify(user_credentials.password, user_query.first().password):
-        raise HTTPException(status_code=403, detail="Invalid credentials")
+        raise HTTPException(status_code=401, detail="Invalid credentials")
 
     # Generate JWT token
     access_token = oauth2.create_access_token(data={
@@ -51,7 +51,7 @@ def login(
         models.User.username == user_credentials.username)
 
     if user_query.first() == None or not verify(user_credentials.password, user_query.first().password):
-        raise HTTPException(status_code=403, detail="Invalid credentials")
+        raise HTTPException(status_code=401, detail="Invalid credentials")
 
     # Check if a refresh token already exists for the user
     existing_refresh_token = db.query(models.RefreshToken).filter(

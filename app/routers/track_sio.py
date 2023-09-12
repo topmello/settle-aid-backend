@@ -20,7 +20,7 @@ subapi = FastAPI()
 subapi.mount("/", sio_app)
 
 MAX_ATTEMPTS = 5
-PIN_EXPIRY_DURATION = timedelta(minutes=30)
+ROOM_EXPIRY_DURATION = timedelta(minutes=30)
 
 
 @sio_server.event
@@ -67,13 +67,10 @@ async def connect(sid, environ):
 
 
 @sio_server.event
-async def join_room(sid, data):
+async def join_room(sid, roomId):
 
     db_gen = get_db()
     db = next(db_gen)
-
-    roomId = data.get('roomId')
-    pin = data.get('pin')
 
     # Fetch the room from the database
     room_query = db.query(models.TrackRoom).filter(
@@ -83,16 +80,16 @@ async def join_room(sid, data):
         await sio_server.emit('error_message', 'Room not found', room=sid)
         return
 
-    # Check if the PIN has expired
+    # Check if the room has expired
     now_utc = datetime.now(timezone.utc)
-    if now_utc - room.created_at > PIN_EXPIRY_DURATION:
+    if now_utc - room.created_at > ROOM_EXPIRY_DURATION:
         db.delete(room)
         db.commit()
-        await sio_server.emit('error_message', 'PIN has expired', room=sid)
+        await sio_server.emit('error_message', 'Room has expired', room=sid)
         return
 
-    # Check if the provided pin matches the room pin
-    if str(room.pin) == pin:
+    # If the room is valid, let the user join
+    if room:
         sio_server.enter_room(sid, roomId)
         await sio_server.emit('room_message', f'User {sid} has joined the room!', room=roomId)
     else:
@@ -100,13 +97,13 @@ async def join_room(sid, data):
         room.failed_attempts += 1
         db.commit()
 
-        # If failed attempts exceed the max limit, delete the room (and PIN)
+        # If failed attempts exceed the max limit, delete the room
         if room.failed_attempts >= MAX_ATTEMPTS:
             db.delete(room)
             db.commit()
-            await sio_server.emit('error_message', 'Too many incorrect attempts. PIN has been removed.', room=sid)
+            await sio_server.emit('error_message', 'Too many incorrect attempts. Room has been removed.', room=sid)
         else:
-            await sio_server.emit('error_message', 'Incorrect pin provided', room=sid)
+            await sio_server.emit('error_message', 'Incorrect room ID provided', room=sid)
 
     # Close the DB session
     next(db_gen, None)
