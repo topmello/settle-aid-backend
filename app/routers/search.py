@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
 from sqlalchemy import select, desc, func, text
@@ -9,10 +9,11 @@ import numpy as np
 
 from sentence_transformers import SentenceTransformer
 
-from ..limiter import rate_limited_route
 from ..database import get_db
 
 from ..mapbox import get_route
+
+from ..limiter import limiter
 
 from .. import models, schemas, oauth2
 
@@ -47,11 +48,12 @@ def softmax(x):
 
 
 @router.post("/route/", response_model=schemas.RouteOut)
+@limiter.limit("1/second")
 async def search_by_query_seq(
+        request: Request,
         querys: schemas.RouteQuery,
         db: Session = Depends(get_db),
-        current_user: schemas.User = Depends(oauth2.get_current_user),
-        _rate_limited: bool = Depends(rate_limited_route)):
+        current_user: schemas.User = Depends(oauth2.get_current_user)):
 
     results = []
     seen_places = set()
@@ -165,11 +167,12 @@ async def search_by_query_seq(
 
 
 @router.post("/v2/route/", response_model=schemas.RouteOutV2)
+@limiter.limit("1/second")
 async def search_by_query_seq_v2(
+        request: Request,
         querys: schemas.RouteQueryV2,
         db: Session = Depends(get_db),
-        current_user: schemas.User = Depends(oauth2.get_current_user),
-        _rate_limited: bool = Depends(rate_limited_route)):
+        current_user: schemas.User = Depends(oauth2.get_current_user)):
 
     results = []
     seen_places = set()

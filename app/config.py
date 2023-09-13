@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     DOC_PASSWORD: str
     REFRESH_SECRET_KEY: str
     REFRESH_TOKEN_EXPIRE_DAYS: int
+    REDIS_HOSTNAME: str
+    REDIS_PORT: str
+    REDIS_PASSWORD: str
 
     model_config = SettingsConfigDict(env_file='.env')
 

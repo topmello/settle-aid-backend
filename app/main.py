@@ -1,13 +1,15 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.openapi.utils import get_openapi
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 import secrets
+import redis
 
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 from sqlalchemy.orm import Session
 
@@ -46,6 +48,7 @@ description = """
 To be continue ...
 """
 
+redis_client = redis.StrictRedis(host='redis', port=6379, db=0)
 
 # Create FastAPI instance
 app = FastAPI(
@@ -63,8 +66,6 @@ app = FastAPI(
 
 security = HTTPBasic()
 
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Add CORS middleware need to change this later for more security
 origins = ["*"]
@@ -75,6 +76,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"]
 )
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 app.include_router(auth.router)
 app.include_router(user.router)
@@ -93,6 +97,12 @@ async def startup_event():
     prompt = "Hello World"
     embed = search.model.encode([prompt])
     pass
+
+
+@app.get("/test")
+@limiter.limit("1/second")
+async def test(request: Request):
+    return {"message": "Hello World"}
 
 
 def get_current_username_doc(credentials: HTTPBasicCredentials = Depends(security)):

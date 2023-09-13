@@ -83,6 +83,7 @@ class Token(BaseModel):
 
 
 class TokenV2(BaseModel):
+    user_id: int
     access_token: str
     token_type: str
     access_token_expire: datetime
@@ -190,4 +191,3 @@ class VoteIn(BaseModel):
 
 class TrackRoomOut(BaseModel):
     room_id: str
-    pin: str

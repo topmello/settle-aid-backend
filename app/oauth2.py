@@ -73,21 +73,11 @@ def create_refresh_token(data: dict, expires_delta: timedelta = None):
     return encoded_jwt
 
 
-def verify_refresh_token(token: str, db: Session):
+def verify_refresh_token(token: str):
     try:
         payload = jwt.decode(token, settings.REFRESH_SECRET_KEY,
                              algorithms=[settings.ALGORITHM])
         user_id: int = payload.get("user_id")
-        token_data = db.query(models.RefreshToken).filter(
-            models.RefreshToken.token == token).first()
-        if not token_data or token_data.user_id != user_id:
-            raise HTTPException(
-                status_code=401, detail="Invalid refresh token")
-        if datetime.utcnow() > token_data.expires_at.replace(tzinfo=None):
-            db.delete(token_data)
-            db.commit()
-            raise HTTPException(
-                status_code=401, detail="Refresh token has expired")
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid refresh token")
     return user_id

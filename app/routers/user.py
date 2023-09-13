@@ -1,13 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from passlib.context import CryptContext
 from typing import List, Dict
-from ..limiter import rate_limited_route
 
 from .. import schemas, models, oauth2
 
 from ..database import get_db
+from ..limiter import limiter
 
 from models.name_generator import name_generator, generate_name
 
@@ -30,7 +30,8 @@ def verify(password: str, hashed_password: str):
 
 
 @router.get('/generate/', response_model=schemas.UsernameGen)
-def generate_username(db: Session = Depends(get_db), _rate_limited: bool = Depends(rate_limited_route)):
+@limiter.limit("1/second")
+def generate_username(request: Request, db: Session = Depends(get_db)):
     query = db.query(models.User.username)
     generated_name = generate_name(name_generator)
     # check if its unqiue
@@ -40,7 +41,8 @@ def generate_username(db: Session = Depends(get_db), _rate_limited: bool = Depen
 
 
 @router.get('/{user_id}/', response_model=schemas.UserOut)
-def get_user(user_id: int, db: Session = Depends(get_db), current_user=Depends(oauth2.get_current_user), _rate_limited: bool = Depends(rate_limited_route)):
+@limiter.limit("1/second")
+def get_user(request: Request, user_id: int, db: Session = Depends(get_db), current_user=Depends(oauth2.get_current_user)):
 
     # Check if user_id is the same as current_user
     if user_id != current_user.user_id:
@@ -64,7 +66,8 @@ def get_user(user_id: int, db: Session = Depends(get_db), current_user=Depends(o
 
 
 @router.post('/', status_code=201, response_model=schemas.User)
-def create_user(user: schemas.UserCreate, db: Session = Depends(get_db), _rate_limited: bool = Depends(rate_limited_route)):
+@limiter.limit("5/minute")
+def create_user(request: Request, user: schemas.UserCreate, db: Session = Depends(get_db)):
 
     if db.query(models.User).filter(models.User.username == user.username).first():
         raise HTTPException(

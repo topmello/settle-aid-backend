@@ -1,6 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
-from ..limiter import rate_limited_route
 
 from .. import models, schemas, oauth2, translation
 
@@ -12,7 +11,7 @@ router = APIRouter(
 
 
 @router.post("/", response_model=schemas.TranslateRes)
-def translate(query: schemas.TranslateQuery, _rate_limited: bool = Depends(rate_limited_route)):
+def translate(request: Request, query: schemas.TranslateQuery):
     translate_text = translation.translate_list(query.texts)
 
     return schemas.TranslateRes(results=translate_text)

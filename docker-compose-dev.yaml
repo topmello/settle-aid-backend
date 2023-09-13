@@ -14,9 +14,16 @@ services:
     volumes:
       - database_volume:/var/lib/postgresql/data/
 
+  redis:
+    container_name: redis
+    image: "redis:latest"
+    command: redis-server --requirepass topmelloredis --loglevel verbose
+    volumes:
+      - redis_volume:/data
+
   backend:
     container_name: backend
-    user: root
+    user: myuser
     build:
       context: .
       dockerfile: Dockerfile.backend
@@ -25,6 +32,7 @@ services:
       - "8000:8000"
     volumes:
       - ./:/usr/src/app
+      - models_volume:/home/myuser/.cache/torch/sentence_transformers/
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     environment:
       - DATABASE_HOSTNAME=db
@@ -40,9 +48,16 @@ services:
       - MAPBOX_ACCESS_TOKEN=pk.eyJ1IjoiamlyYXRoaXAiLCJhIjoiY2xsdTBoNzQ3MHdndzNzc3luaW03YmNseSJ9.CvqEW28-Dab5qUQ1MCQOgg
       - DOC_USERNAME=topmello
       - DOC_PASSWORD=da7da0df508738e37f18
+      - REDIS_HOSTNAME=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=topmelloredis
+      - TRANSFORMERS_CACHE=/usr/src/app/transformers_cache
 
     depends_on:
       - db
+      - redis
 
 volumes:
   database_volume:
+  redis_volume:
+  models_volume:

@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from ..limiter import rate_limited_route
 from .. import schemas, models, oauth2
 from ..database import get_db
+from ..limiter import limiter
 
 router = APIRouter(
     prefix='/route',
@@ -34,16 +34,23 @@ def route_db_to_pydantic(route_db: models.Route) -> schemas.RouteOutV2:
 
 
 @router.get('/{route_id}', response_model=schemas.RouteVoteOut)
-def get_route(route_id: int, db: Session = Depends(get_db)):
+@limiter.limit("1/second")
+def get_route(request: Request, route_id: int, db: Session = Depends(get_db)):
     route_query = (
         db.query(models.Route, func.count(models.User_Route_Vote.route_id)).filter(
             models.Route.route_id == route_id)
         .join(models.User_Route_Vote, models.Route.route_id == models.User_Route_Vote.route_id, isouter=True)
         .group_by(models.Route.route_id)
     )
-    route_obj, num_votes = route_query.first()
 
-    if not route_obj:
+    result = route_query.first()
+
+    if not result:
+        raise HTTPException(status_code=404, detail="Route not found")
+
+    try:
+        route_obj, num_votes = result
+    except ValueError:
         raise HTTPException(status_code=404, detail="Route not found")
 
     route_vote_out = schemas.RouteVoteOut(
@@ -54,7 +61,8 @@ def get_route(route_id: int, db: Session = Depends(get_db)):
 
 
 @router.get('/user/{user_id}/', response_model=list[schemas.RouteVoteOut])
-def get_routes(user_id: int, limit: int = 10, db: Session = Depends(get_db), _rate_limited: bool = Depends(rate_limited_route)):
+@limiter.limit("5/second")
+def get_routes(request: Request, user_id: int, limit: int = 10, db: Session = Depends(get_db)):
     if limit > 50:
         raise HTTPException(status_code=400, detail="Limit too high")
     if db.query(models.User).filter(models.User.user_id == user_id).first() is None:
@@ -66,6 +74,33 @@ def get_routes(user_id: int, limit: int = 10, db: Session = Depends(get_db), _ra
         db.query(models.Route, func.count(models.User_Route_Vote.route_id))
         .filter(models.Route.created_by_user_id == user_id)
         .join(models.User_Route_Vote, models.Route.route_id == models.User_Route_Vote.route_id, isouter=True)
+        .group_by(models.Route.route_id)
+        .order_by(models.Route.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+    routes_out = [schemas.RouteVoteOut(
+        route=route_db_to_pydantic(route_obj),
+        num_votes=num_votes) for route_obj, num_votes in routes]
+
+    return routes_out
+
+
+@router.get('/user/fav/{user_id}/', response_model=list[schemas.RouteVoteOut])
+@limiter.limit("5/second")
+def get_routes(request: Request, user_id: int, limit: int = 10, db: Session = Depends(get_db)):
+    if limit > 50:
+        raise HTTPException(status_code=400, detail="Limit too high")
+    if db.query(models.User).filter(models.User.user_id == user_id).first() is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    if db.query(func.count(models.Route.route_id)).scalar() == 0:
+        raise HTTPException(status_code=404, detail="No routes found")
+
+    routes = (
+        db.query(models.Route, func.count(models.User_Route_Vote.route_id))
+        .filter(models.Route.created_by_user_id == user_id)
+        .join(models.User_Route_Vote, models.Route.route_id == models.User_Route_Vote.route_id, isouter=True)
+        .filter(models.User_Route_Vote.user_id == user_id)
         .group_by(models.Route.route_id)
         .order_by(models.Route.created_at.desc())
         .limit(limit)

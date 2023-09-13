@@ -1,14 +1,26 @@
+# Use the specified base image
 FROM python:3.9.17-bullseye
 
-# set the working directory in the container
+# Create a non-root user named 'myuser'
+RUN useradd -m myuser
+
+# Set the working directory in the container
 WORKDIR /usr/src/app
 
+# Copy the requirements file
 COPY requirements.txt .
 
+# Install the requirements
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy everything from the current directory to the PWD (Present Working Directory) inside the container
+# Copy everything from the current directory to the working directory inside the container
 COPY . .
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Change the ownership of the working directory to 'myuser'
+RUN chown -R myuser:myuser /usr/src/app
 
+# Switch to 'myuser'
+USER myuser
+
+# Set the default command for the container
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

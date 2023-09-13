@@ -141,15 +141,21 @@ def test_route_v2(test_client):
 
     route_id = res.json()["route_id"]
 
+    time.sleep(2)
+
     res = test_client.get(
         "/route/user/100"
     )
     assert res.status_code == 404
 
+    time.sleep(2)
+
     res = test_client.get(
         f"/route/user/1"
     )
     assert res.status_code == 200
+
+    time.sleep(2)
 
     res = test_client.get(
         f"/route/user/1/?limit=1000"

@@ -1,12 +1,14 @@
 from fastapi import FastAPI, APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+import redis
 from ..database import get_db
 from .. import models, schemas, oauth2
+from ..redis import redis_room_db
 import socketio
 from datetime import datetime, timedelta, timezone
 import random
 
-
+# Create a Socket.IO server
 sio_server = socketio.AsyncServer(
     async_mode='asgi',
     cors_allowed_origins=[],
@@ -18,9 +20,6 @@ sio_app = socketio.ASGIApp(sio_server, socketio_path="sio")
 
 subapi = FastAPI()
 subapi.mount("/", sio_app)
-
-MAX_ATTEMPTS = 5
-ROOM_EXPIRY_DURATION = timedelta(minutes=30)
 
 
 @sio_server.event
@@ -69,44 +68,16 @@ async def connect(sid, environ):
 @sio_server.event
 async def join_room(sid, roomId):
 
-    db_gen = get_db()
-    db = next(db_gen)
+    # Check if the room ID exists in Redis
+    room_exists = redis_room_db.exists(roomId)
 
-    # Fetch the room from the database
-    room_query = db.query(models.TrackRoom).filter(
-        models.TrackRoom.room_id == roomId)
-    room = room_query.first()
-    if not room:
-        await sio_server.emit('error_message', 'Room not found', room=sid)
-        return
-
-    # Check if the room has expired
-    now_utc = datetime.now(timezone.utc)
-    if now_utc - room.created_at > ROOM_EXPIRY_DURATION:
-        db.delete(room)
-        db.commit()
-        await sio_server.emit('error_message', 'Room has expired', room=sid)
+    if not room_exists:
+        await sio_server.emit('error_message', 'Room not found or has expired', room=sid)
         return
 
     # If the room is valid, let the user join
-    if room:
-        sio_server.enter_room(sid, roomId)
-        await sio_server.emit('room_message', f'User {sid} has joined the room!', room=roomId)
-    else:
-        # Increment the failed attempts for this room
-        room.failed_attempts += 1
-        db.commit()
-
-        # If failed attempts exceed the max limit, delete the room
-        if room.failed_attempts >= MAX_ATTEMPTS:
-            db.delete(room)
-            db.commit()
-            await sio_server.emit('error_message', 'Too many incorrect attempts. Room has been removed.', room=sid)
-        else:
-            await sio_server.emit('error_message', 'Incorrect room ID provided', room=sid)
-
-    # Close the DB session
-    next(db_gen, None)
+    sio_server.enter_room(sid, roomId)
+    await sio_server.emit('room_message', f'User {sid} has joined the room!', room=roomId)
 
 
 @sio_server.event
@@ -128,7 +99,7 @@ async def move(sid, data):
     if roomId and lat and long:
         await sio_server.emit('move', {'sid': sid, 'lat': lat, 'long': long}, room=str(roomId))
     else:
-        print("Incomplete data provided in move event")
+        await sio_server.emit('error_message', 'Incomplete data provided in move event', room=sid)
 
 
 @sio_server.event
