@@ -53,13 +53,12 @@ def login(
     user_query = db.query(models.User).filter(
         models.User.username == user_credentials.username)
 
-    user_id = user_query.first().user_id
-
     if user_query.first() == None or not verify(user_credentials.password, user_query.first().password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
+    user_id = user_query.first().user_id
     # Delete existing refresh token from Redis
-    r.delete(f"refresh_token:{user_query.first().user_id}")
+    r.delete(f"refresh_token:{user_id}")
 
     # Generate JWT token
     access_token, access_token_expire = oauth2.create_access_token_v2(data={

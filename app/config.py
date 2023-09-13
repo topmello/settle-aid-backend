@@ -19,7 +19,10 @@ class Settings(BaseSettings):
     REDIS_PORT: str
     REDIS_PASSWORD: str
 
-    model_config = SettingsConfigDict(env_file='.env')
+    class Config(SettingsConfigDict):
+        env_file = ".env"
+        extra = "ignore"
+        env_file_encoding = "utf-8"
 
 
 settings = Settings()

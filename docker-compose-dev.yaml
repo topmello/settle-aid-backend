@@ -52,6 +52,7 @@ services:
       - REDIS_PORT=6379
       - REDIS_PASSWORD=topmelloredis
       - TRANSFORMERS_CACHE=/usr/src/app/transformers_cache
+      - PYTEST_ADDOPTS="-o cache_dir=/usr/src/app/.pytest_cache"
 
     depends_on:
       - db
