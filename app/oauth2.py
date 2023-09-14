@@ -92,7 +92,7 @@ def create_refresh_token(
     encoded_jwt = jwt.encode(
         to_encode, settings.REFRESH_SECRET_KEY, algorithm=settings.ALGORITHM)
 
-    return encoded_jwt
+    return encoded_jwt, expire
 
 
 def verify_refresh_token(token: str):

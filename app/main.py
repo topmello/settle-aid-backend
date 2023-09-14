@@ -1,6 +1,7 @@
+from fastapi.responses import StreamingResponse
 from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.openapi.utils import get_openapi
@@ -8,6 +9,9 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.templating import Jinja2Templates
 import secrets
 import aioredis
+import asyncio
+import json
+import time
 
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -22,7 +26,6 @@ from .database import get_db
 from . import models
 from .limiter import limiter
 from .redis import get_redis_logs_db, redis_logs_db_context, log_to_redis, get_logs_from_redis
-import json
 
 
 description = """
@@ -57,6 +60,8 @@ Some general HTTP status codes and guidelines:
 - 422: Unprocessable Entity (Validation Error): This error occurs when the request body is invalid. The logs should be in the Validation category.
 - 429: Too Many Requests: This error occurs when the user exceeds the rate limit. The logs should be in the RateLimit category.
 
+Notes:
+- All the timestamps are in UTC.
 
 """
 
@@ -178,3 +183,34 @@ async def get_logs_ui(request: Request, r: aioredis.Redis = Depends(get_redis_lo
         logs_by_category[category] = await get_logs_from_redis(category, r)
 
     return templates.TemplateResponse("logs.html", {"request": request, "logs": logs_by_category})
+
+
+@app.get("/logs/stream/")
+async def logs_stream(r: aioredis.Redis = Depends(get_redis_logs_db)):
+    categories = ["Auth", "Search", "Route",
+                  "Track", "Translate", "User", "Vote", "Validation", "RateLimit"]
+    logs_category = [f"logs:{category}" for category in categories]
+
+    async def event_stream():
+        inactive_time = 0
+        while True:
+            # Initialize the streams dictionary
+            streams_dict = {stream: "$" for stream in logs_category}
+
+            # Wait for log entries starting from the current ID
+            entries = await r.xread(streams_dict, count=1, block=10000)
+            if not entries:
+                await asyncio.sleep(1)
+                inactive_time += 1
+
+                if inactive_time >= 3:
+                    break
+
+                continue
+
+            for _, items in entries:
+                for id, log_data in items:
+                    current_id = id  # Update the current ID
+                    yield f"id: {id}\ndata: {json.dumps(log_data)}\n\n"
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")

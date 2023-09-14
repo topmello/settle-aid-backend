@@ -62,28 +62,35 @@ async def redis_logs_db_context():
 
 
 async def log_to_redis(category: str, message: str, r: aioredis.Redis):
-    log_id = f"log:{datetime.utcnow().isoformat()}"
-
-    # Store the log details as a hash
-    await r.hset(log_id, mapping={
+    log_data = {
         "message": message,
         "timestamp": datetime.utcnow().isoformat(),
         "category": category
-    })
+    }
 
-    # Push the log message to the beginning of the list specific to the category
-    await r.lpush(f"logs:{category}", log_id)
+    # Add the log to the stream
+    await r.xadd(f"logs:{category}", log_data)
 
-    # Trim the list to only keep the most recent 100 entries
-    await r.ltrim(f"logs:{category}", 0, 99)
+    await r.xtrim(f"logs:{category}", maxlen=100, approximate=False)
 
 
-async def get_logs_from_redis(category: str, r: aioredis.Redis):
-    log_ids = await r.lrange(f"logs:{category}", 0, -1)
+async def get_logs_from_redis(category: str, r: aioredis.Redis, count=100):
+    try:
+        entries = await r.xrevrange(f"logs:{category}", count=count)
+    except aioredis.exceptions.ResponseError as e:
+        if "WRONGTYPE" in str(e):
+            await r.delete(f"logs:{category}")
+            return []  # Return an empty list if the stream doesn't exist
+        raise
 
     logs = []
-    for log_id in log_ids:
-        log_data = await r.hgetall(log_id)
+    for entry in entries:
+        log_data = {
+            "id": entry[0],
+            "message": entry[1].get("message"),
+            "timestamp": entry[1].get("timestamp"),
+            "category": entry[1].get("category")
+        }
         logs.append(log_data)
 
     return logs

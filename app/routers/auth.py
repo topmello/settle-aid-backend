@@ -61,12 +61,18 @@ async def login(
     cached_user_data = await r.get(f"user_data:{user_credentials.username}")
 
     if cached_user_data != "null" and cached_user_data is not None:
+        await log_to_redis("Auth", f"User data retrieved from cache", r_logger)
         user = json.loads(cached_user_data)
         user = schemas.User(**user)
 
     else:
+        await log_to_redis("Auth", f"User data retrieved from database", r_logger)
         user = db.query(models.User).filter(
             models.User.username == user_credentials.username).first()
+
+        if not user:
+            await log_to_redis("Auth", f"User not found", r_logger)
+            raise HTTPException(status_code=404, detail="User not found")
 
         # Cache the user data in Redis for future requests
         await r.setex(
@@ -94,9 +100,8 @@ async def login(
     })
     # Generate refresh token
     refresh_token_data = {"user_id": user_id}
-    refresh_token = oauth2.create_refresh_token(data=refresh_token_data)
-    refresh_token_expiry = datetime.utcnow(
-    ) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    refresh_token, refresh_token_expiry = oauth2.create_refresh_token(
+        data=refresh_token_data)
 
     # Store refresh token and its expiry in Redis as a JSON string
     token_data = {
@@ -158,9 +163,11 @@ async def refresh_token(
 
     # Check if user data is cached, otherwise fetch from the database
     if cached_user_data != "null" and cached_user_data is not None:
+        await log_to_redis("Auth", f"User data retrieved from cache", r_logger)
         user = json.loads(cached_user_data)
         user = schemas.User(**user)
     else:
+        await log_to_redis("Auth", f"User data retrieved from database", r_logger)
         user = db.query(models.User).filter(
             models.User.user_id == user_id).first()
         if user:
@@ -172,6 +179,7 @@ async def refresh_token(
                 "created_at": user.created_at.isoformat()
             }))
         else:
+            await log_to_redis("Auth", f"User not found", r_logger)
             raise HTTPException(status_code=404, detail="User not found")
 
     # Generate new access token
