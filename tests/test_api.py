@@ -49,7 +49,7 @@ def test_translate(test_client):
 
 def test_create_user(test_client):
     res = test_client.post(
-        "/user/", json={"username": "test", "password": "test"})
+        "/user/", json={"username": "test", "password": "test1234"})
     if res.status_code == 400:
         assert res.json()["detail"] == "Username already registered"
     if res.status_code == 201:
@@ -58,7 +58,7 @@ def test_create_user(test_client):
 
 def test_login(test_client):
     res = test_client.post(
-        "/login/", json={"username": "test", "password": "test"})
+        "/login/", json={"username": "test", "password": "test1234"})
     assert res.status_code == 200
     assert res.json()["token_type"] == "bearer"
     assert res.json()["access_token"] != None
@@ -66,7 +66,7 @@ def test_login(test_client):
 
 def test_login_v2(test_client):
     res = test_client.post(
-        "/login/v2/", json={"username": "test", "password": "test"})
+        "/login/v2/", json={"username": "test", "password": "test1234"})
 
     assert res.status_code == 200
     assert 'access_token' in res.json()
@@ -90,7 +90,7 @@ def test_login_v2(test_client):
 
 def test_route(test_client):
     res = test_client.post(
-        "/login/v2/", json={"username": "test", "password": "test"})
+        "/login/v2/", json={"username": "test", "password": "test1234"})
     assert res.status_code == 200
     token = res.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
@@ -115,7 +115,7 @@ def test_route(test_client):
 
 def test_route_v2(test_client):
     res = test_client.post(
-        "/login/v2/", json={"username": "test", "password": "test"})
+        "/login/v2/", json={"username": "test", "password": "test1234"})
     assert res.status_code == 200
     token = res.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
@@ -165,7 +165,7 @@ def test_route_v2(test_client):
 
 def test_vote(test_client):
     res = test_client.post(
-        "/login/v2/", json={"username": "test", "password": "test"})
+        "/login/v2/", json={"username": "test", "password": "test1234"})
     assert res.status_code == 200
     token = res.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}

@@ -83,7 +83,7 @@ async def get_user(
     return user_out
 
 
-@router.post('/', status_code=201, response_model=schemas.UserCreate)
+@router.post('/', status_code=201, response_model=schemas.User)
 @limiter.limit("5/minute")
 async def create_user(
         request: Request,
