@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from jose import jwt
 import json
 import aioredis
+import asyncio
 
 from ..database import get_db
 from ..redis import get_redis_refresh_token_db, get_redis_logs_db, log_to_redis
@@ -55,14 +56,34 @@ async def login(
         r_logger: aioredis.Redis = Depends(get_redis_logs_db)):
     await log_to_redis("Auth", f"{request.method} request to {request.url.path}", r_logger)
     # user_credentials contains username and password
-    user_query = db.query(models.User).filter(
-        models.User.username == user_credentials.username)
 
-    if user_query.first() == None or not verify(user_credentials.password, user_query.first().password):
+    # Check if user data is in Redis cache
+    cached_user_data = await r.get(f"user_data:{user_credentials.username}")
 
+    if cached_user_data != "null" and cached_user_data is not None:
+        user = json.loads(cached_user_data)
+        user = schemas.User(**user)
+
+    else:
+        user = db.query(models.User).filter(
+            models.User.username == user_credentials.username).first()
+
+        # Cache the user data in Redis for future requests
+        await r.setex(
+            f"user_data:{user_credentials.username}",
+            settings.USER_CACHE_EXPIRY,
+            json.dumps({
+                "user_id": user.user_id,
+                "username": user.username,
+                "password": user.password,
+                "created_at": user.created_at.isoformat()
+            }))
+
+    if not user or not verify(user_credentials.password, user.password):
+        await log_to_redis("Auth", f"Invalid credentials", r_logger)
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    user_id = user_query.first().user_id
+    user_id = user.user_id
     # Delete existing refresh token from Redis
     await r.delete(f"refresh_token:{user_id}")
 
@@ -80,10 +101,11 @@ async def login(
     # Store refresh token and its expiry in Redis as a JSON string
     token_data = {
         "token": refresh_token,
+        "user_id": user_id,
         "expires_at": refresh_token_expiry.isoformat()
     }
     ttl = (refresh_token_expiry - datetime.utcnow()).total_seconds()
-    await r.setex(f"refresh_token:{user_query.first().user_id}", int(
+    await r.setex(f"refresh_token:{user_id}", int(
         ttl), json.dumps(token_data))
 
     await log_to_redis("Auth", f"User {user_id} logged in", r_logger)
@@ -105,12 +127,18 @@ async def refresh_token(
         db: Session = Depends(get_db),
         r: aioredis.Redis = Depends(get_redis_refresh_token_db),
         r_logger: aioredis.Redis = Depends(get_redis_logs_db)):
+
     await log_to_redis("Auth", f"{request.method} request to {request.url.path}", r_logger)
+
     # Verify the JWT signature and get the user_id
     user_id = oauth2.verify_refresh_token(refresh_token.refresh_token)
 
-    # Retrieve the stored token data from Redis
-    stored_token_data = await r.get(f"refresh_token:{user_id}")
+    # Retrieve the stored token data and user data (if cached) from Redis
+    stored_token_data, cached_user_data = await asyncio.gather(
+        r.get(f"refresh_token:{user_id}"),
+        r.get(f"user_data:{user_id}")
+    )
+
     if not stored_token_data:
         await log_to_redis("Auth", f"Refresh token not existed", r_logger)
         raise HTTPException(
@@ -128,13 +156,29 @@ async def refresh_token(
         raise HTTPException(
             status_code=401, detail="Refresh token has expired")
 
-    # Generate a new access token
-    user = db.query(models.User).filter(models.User.user_id == user_id).first()
-    if user is None:
-        raise HTTPException(status_code=404, detail="User not found")
+    # Check if user data is cached, otherwise fetch from the database
+    if cached_user_data != "null" and cached_user_data is not None:
+        user = json.loads(cached_user_data)
+        user = schemas.User(**user)
+    else:
+        user = db.query(models.User).filter(
+            models.User.user_id == user_id).first()
+        if user:
+            # Cache the user data in Redis for future requests
+            await r.setex(f"user_data:{user_id}", settings.USER_CACHE_EXPIRY, json.dumps({
+                "user_id": user.user_id,
+                "username": user.username,
+                "password": user.password,
+                "created_at": user.created_at.isoformat()
+            }))
+        else:
+            raise HTTPException(status_code=404, detail="User not found")
 
+    # Generate new access token
     access_token, access_token_expire = oauth2.create_access_token_v2(
         data={"user_id": user.user_id, "username": user.username})
+
+    await log_to_redis("Auth", f"Access token refreshed", r_logger)
 
     return {
         "user_id": user_id,

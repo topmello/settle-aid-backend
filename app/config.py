@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     REDIS_HOSTNAME: str
     REDIS_PORT: str
     REDIS_PASSWORD: str
+    USER_CACHE_EXPIRY: int
 
     model_config: ConfigDict = {
         "env_file": ".env",
