@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import ConfigDict
 
 
 class Settings(BaseSettings):
@@ -19,10 +20,11 @@ class Settings(BaseSettings):
     REDIS_PORT: str
     REDIS_PASSWORD: str
 
-    class Config(SettingsConfigDict):
-        env_file = ".env"
-        extra = "ignore"
-        env_file_encoding = "utf-8"
+    model_config: ConfigDict = {
+        "env_file": ".env",
+        "extra": "ignore",
+        "env_file_encoding": "utf-8"
+    }
 
 
 settings = Settings()

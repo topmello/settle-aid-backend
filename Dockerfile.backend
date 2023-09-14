@@ -17,7 +17,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Change the ownership of the working directory to 'myuser'
-RUN chown -R myuser:myuser /usr/src/app
+RUN chown -R myuser:myuser /usr/src/app && \
+    mkdir -p /usr/src/app/.pytest_cache && \
+    chown -R myuser:myuser /usr/src/app/.pytest_cache && \
+    mkdir -p /home/myuser/.cache/torch/sentence_transformers && \
+    chown -R myuser:myuser /home/myuser/.cache
 
 # Switch to 'myuser'
 USER myuser
