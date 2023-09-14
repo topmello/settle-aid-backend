@@ -26,29 +26,38 @@ import json
 
 
 description = """
-# Authentication 🔑
+## Authentication 🔑
 
 - Login Endpoint (/login): Authenticates the user and returns a JWT token. If the user exceeds the maximum allowed login attempts, their IP is blocked for a specified duration.
 - Login V2 Endpoint (/v2/login): An enhanced version of the login endpoint. In addition to authenticating the user and returning a JWT token, it also provides a refresh token. If a user already has a refresh token, the old one is deleted and a new one is generated.
 - Refresh Token Endpoint (/v2/token/refresh): Allows the user to get a new JWT token using their refresh token. The refresh token remains the same.
 
-# User 👩‍🦳
+## User 👩‍🦳
 
 - Generate Username Endpoint (/generate): Generates a unique username. If the generated name exists in the database, it keeps generating until a unique name is found.
 - Get User Details Endpoint (/{user_id}): Retrieves the details of a user and their history based on the provided user ID.
 - Create User Endpoint (/): Creates a new user in the database.
 
 
-# Search Route 🛵
+## Search Route 🛵
 - Search by Query Sequence Endpoint (/route/): Searches for a sequence of locations based on the user's queries. For each query, it finds a location that matches the query's embedding and then creates a route based on the sequence of found locations.
 
-# Translate 🇦🇺
+## Translate 🇦🇺
 - Translate Endpoint (/): Translates a list of texts into the target language (English) using the Google Cloud Translation API.
 
-# Track 🛤️
-- WebSocket connection to track a user's location
+## Track 🛤️
+- SocketIO connection to track a user's location
+For documentation for SocketIO connection, please refer to the [Topmello documentation](https://topmello.github.io/docs/backend/tracker).
 
-To be continue ...
+## Logs 📜
+Please go to /logs/ to view the logs.
+
+Some general HTTP status codes and guidelines:
+- 401: Unauthorized: This error occurs when the user is not authenticated. The logs should be in the Auth category.
+- 422: Unprocessable Entity (Validation Error): This error occurs when the request body is invalid. The logs should be in the Validation category.
+- 429: Too Many Requests: This error occurs when the user exceeds the rate limit. The logs should be in the RateLimit category.
+
+
 """
 
 # Create FastAPI instance
@@ -119,6 +128,17 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     return JSONResponse(content={"detail": exc.errors()}, status_code=400)
 
 
+@app.exception_handler(RateLimitExceeded)
+async def ratelimit_exception(request: Request, exc: RateLimitExceeded):
+    # Log the rate limit exceedance to Redis
+    async with redis_logs_db_context() as redis_logger:
+        await log_to_redis("RateLimit", f"Rate limit exceeded for IP: {get_remote_address(request)}", redis_logger)
+    await redis_logger.close()
+
+    # Return a custom response or the default one
+    return JSONResponse(content={"detail": "Too many requests"}, status_code=429)
+
+
 def get_current_username_doc(credentials: HTTPBasicCredentials = Depends(security)):
     correct_username = secrets.compare_digest(
         credentials.username, settings.DOC_USERNAME)
@@ -151,7 +171,7 @@ async def openapi(username: str = Depends(get_current_username_doc)):
 @app.get("/logs")
 async def get_logs_ui(request: Request, r: aioredis.Redis = Depends(get_redis_logs_db)):
     categories = ["Auth", "Search", "Route",
-                  "Track", "Translate", "User", "Vote", "Validation"]
+                  "Track", "Translate", "User", "Vote", "Validation", "RateLimit"]
     logs_by_category = {}
 
     for category in categories:
