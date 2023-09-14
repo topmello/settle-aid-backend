@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
@@ -8,6 +8,8 @@ from .config import settings
 from .schemas import TokenData
 from .database import get_db
 from . import models
+import aioredis
+from .redis import get_redis_logs_db, log_to_redis
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
@@ -23,6 +25,7 @@ def create_access_token(data: dict):
 
 
 def create_access_token_v2(data: dict):
+
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
@@ -32,7 +35,10 @@ def create_access_token_v2(data: dict):
     return encoded_jwt, expire
 
 
-def verify_access_token(token: str, credentials_exception):
+async def verify_access_token(
+        token: str,
+        credentials_exception,
+        r_logger: aioredis.Redis = Depends(get_redis_logs_db)):
     try:
         payload = jwt.decode(token, settings.SECRET_KEY,
                              algorithms=[settings.ALGORITHM])
@@ -48,20 +54,35 @@ def verify_access_token(token: str, credentials_exception):
         raise credentials_exception
 
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+async def get_current_user(
+        request: Request,
+        token: str = Depends(oauth2_scheme),
+        db: Session = Depends(get_db),
+        r_logger: aioredis.Redis = Depends(get_redis_logs_db)):
+
+    endpoint = request.url.path
+
+    await log_to_redis("Auth", f"Endpoint {endpoint} - Retrieving current user", r_logger)
+
     credentials_exception = HTTPException(
         status_code=401,
         detail="Invalid credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    token_data = verify_access_token(token, credentials_exception)
+    token_data = await verify_access_token(token, credentials_exception)
     user_query = db.query(models.User).filter(
         models.User.user_id == token_data.user_id)
+
+    await log_to_redis("Auth", f"Endpoint {endpoint} - Current user retrieved", r_logger)
 
     return user_query.first()
 
 
-def create_refresh_token(data: dict, expires_delta: timedelta = None):
+def create_refresh_token(
+        data: dict,
+        expires_delta: timedelta = None,
+        r_logger: aioredis.Redis = Depends(get_redis_logs_db)):
+
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
@@ -70,6 +91,7 @@ def create_refresh_token(data: dict, expires_delta: timedelta = None):
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(
         to_encode, settings.REFRESH_SECRET_KEY, algorithm=settings.ALGORITHM)
+
     return encoded_jwt
 
 

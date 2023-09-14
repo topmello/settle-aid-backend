@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ValidationError, field_validator, constr
+from pydantic import BaseModel, ValidationError, field_validator, constr, root_validator
 from datetime import datetime
 
 

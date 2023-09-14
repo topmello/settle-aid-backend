@@ -164,14 +164,3 @@ class Prompt_Pharmacy(Base):
     location_id = Column(Integer, ForeignKey("pharmacies.id"), nullable=False)
     created_at = Column(TIMESTAMP(timezone=True),
                         server_default=text("now()"), nullable=False)
-
-
-class TrackRoom(Base):
-    __tablename__ = "track_rooms"
-
-    room_id = Column(String, primary_key=True)
-    user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
-    pin = Column(String, nullable=False)
-    failed_attempts = Column(Integer, nullable=False, default=0)
-    created_at = Column(TIMESTAMP(timezone=True),
-                        server_default=text("now()"), nullable=False)

@@ -1,10 +1,13 @@
 from fastapi import FastAPI, Depends, HTTPException, status, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.openapi.utils import get_openapi
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi.templating import Jinja2Templates
 import secrets
-import redis
+import aioredis
 
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -18,7 +21,7 @@ from .routers import auth, user, search, translate, track_sio, track, vote, rout
 from .database import get_db
 from . import models
 from .limiter import limiter
-
+from .redis import get_redis_logs_db, redis_logs_db_context, log_to_redis, get_logs_from_redis
 import json
 
 
@@ -47,8 +50,6 @@ description = """
 
 To be continue ...
 """
-
-redis_client = redis.StrictRedis(host='redis', port=6379, db=0)
 
 # Create FastAPI instance
 app = FastAPI(
@@ -89,6 +90,8 @@ app.include_router(route.router)
 app.include_router(track.router)
 app.mount("/track-sio", track_sio.subapi)
 
+templates = Jinja2Templates(directory="app/templates")
+
 
 @app.on_event("startup")
 async def startup_event():
@@ -103,6 +106,17 @@ async def startup_event():
 @limiter.limit("1/second")
 async def test(request: Request):
     return {"message": "Hello World"}
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    endpoint = request.url.path
+    # Log the error details
+    async with redis_logs_db_context() as redis_logger:
+        await log_to_redis("Validation", f"{request.method} request to {request.url.path}: {str(exc.errors())}", redis_logger)
+
+    # Return the default FastAPI error response
+    return JSONResponse(content={"detail": exc.errors()}, status_code=400)
 
 
 def get_current_username_doc(credentials: HTTPBasicCredentials = Depends(security)):
@@ -132,3 +146,15 @@ async def openapi(username: str = Depends(get_current_username_doc)):
         contact=app.contact,
         version=app.version,
         routes=app.routes)
+
+
+@app.get("/logs")
+async def get_logs_ui(request: Request, r: aioredis.Redis = Depends(get_redis_logs_db)):
+    categories = ["Auth", "Search", "Route",
+                  "Track", "Translate", "User", "Vote", "Validation"]
+    logs_by_category = {}
+
+    for category in categories:
+        logs_by_category[category] = await get_logs_from_redis(category, r)
+
+    return templates.TemplateResponse("logs.html", {"request": request, "logs": logs_by_category})

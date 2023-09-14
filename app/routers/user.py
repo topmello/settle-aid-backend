@@ -8,6 +8,8 @@ from .. import schemas, models, oauth2
 
 from ..database import get_db
 from ..limiter import limiter
+import aioredis
+from ..redis import get_redis_logs_db, log_to_redis
 
 from models.name_generator import name_generator, generate_name
 
@@ -31,7 +33,13 @@ def verify(password: str, hashed_password: str):
 
 @router.get('/generate/', response_model=schemas.UsernameGen)
 @limiter.limit("1/second")
-def generate_username(request: Request, db: Session = Depends(get_db)):
+async def generate_username(
+        request: Request,
+        db: Session = Depends(get_db),
+        r_logger: aioredis.Redis = Depends(get_redis_logs_db)):
+
+    await log_to_redis("User", f"{request.method} request to {request.url.path}", r_logger)
+
     query = db.query(models.User.username)
     generated_name = generate_name(name_generator)
     # check if its unqiue
@@ -42,7 +50,14 @@ def generate_username(request: Request, db: Session = Depends(get_db)):
 
 @router.get('/{user_id}/', response_model=schemas.UserOut)
 @limiter.limit("1/second")
-def get_user(request: Request, user_id: int, db: Session = Depends(get_db), current_user=Depends(oauth2.get_current_user)):
+async def get_user(
+        request: Request,
+        user_id: int,
+        db: Session = Depends(get_db),
+        current_user=Depends(oauth2.get_current_user),
+        r_logger: aioredis.Redis = Depends(get_redis_logs_db)):
+
+    await log_to_redis("User", f"{request.method} request to {request.url.path}", r_logger)
 
     # Check if user_id is the same as current_user
     if user_id != current_user.user_id:
@@ -53,6 +68,7 @@ def get_user(request: Request, user_id: int, db: Session = Depends(get_db), curr
         models.Prompt.created_by_user_id == user_id).limit(10).all()
 
     if user is None:
+        await log_to_redis("User", f"User not found", r_logger)
         raise HTTPException(status_code=404, detail="User not found")
 
     user_out = schemas.UserOut(
@@ -62,14 +78,23 @@ def get_user(request: Request, user_id: int, db: Session = Depends(get_db), curr
         prompts=[schemas.Prompt.from_orm(prompt) for prompt in prompts]
     )
 
+    await log_to_redis("User", f"User found", r_logger)
+
     return user_out
 
 
-@router.post('/', status_code=201, response_model=schemas.User)
+@router.post('/', status_code=201, response_model=schemas.UserCreate)
 @limiter.limit("5/minute")
-def create_user(request: Request, user: schemas.UserCreate, db: Session = Depends(get_db)):
+async def create_user(
+        request: Request,
+        user: schemas.UserCreate,
+        db: Session = Depends(get_db),
+        r_logger: aioredis.Redis = Depends(get_redis_logs_db)):
+
+    await log_to_redis("User", f"{request.method} request to {request.url.path}", r_logger)
 
     if db.query(models.User).filter(models.User.username == user.username).first():
+        await log_to_redis("User", f"Username already registered", r_logger)
         raise HTTPException(
             status_code=400, detail="Username already registered")
 
@@ -83,4 +108,5 @@ def create_user(request: Request, user: schemas.UserCreate, db: Session = Depend
     db.commit()
     db.refresh(new_user)
 
+    await log_to_redis("User", f"User created", r_logger)
     return new_user

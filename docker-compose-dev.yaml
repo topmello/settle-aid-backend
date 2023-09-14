@@ -16,7 +16,8 @@ services:
 
   redis:
     container_name: redis
-    image: "redis:latest"
+    image: redis:latest
+    restart: always
     command: redis-server --requirepass topmelloredis --loglevel verbose
     volumes:
       - redis_volume:/data
