@@ -71,6 +71,11 @@
 
         eventSource.onmessage = function (event) {
           const logData = JSON.parse(event.data);
+
+          if (logData.message === "ping") {
+            return; // Ignore ping events
+          }
+
           const category = logData.category;
           const logList = document.getElementById(`logs-${category}`);
 

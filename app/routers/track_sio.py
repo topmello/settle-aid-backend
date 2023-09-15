@@ -84,13 +84,21 @@ async def join_room(sid, roomId):
         async with redis_logs_db_context() as redis_logger:
             await log_to_redis("Track", f"Room not found or has expired", redis_logger)
 
-        await sio_server.emit('error_message', 'Room not found or has expired', room=sid)
+        await sio_server.emit('error', {
+            'status': 480,  # 480 Room Not Found or Expired
+            'message': 'Room not found or has expired'
+        }, room=sid)
         return
 
     # If the room is valid, let the user join
     sio_server.enter_room(sid, roomId)
 
-    await sio_server.emit('room_message', f'User {sid} has joined the room!', room=roomId)
+    await sio_server.emit('room', {
+        "detail": {
+            "type": "joined_room",
+            "msg": f"{sid} has joined the room"
+        }
+    }, room=roomId)
     async with redis_logs_db_context() as redis_logger:
         await log_to_redis("Track", f"Sid {sid} has joined room {roomId}", redis_logger)
 
@@ -102,7 +110,10 @@ async def leave_room(sid, roomId):
     sio_server.leave_room(sid, roomId)
 
     # Notify the room that the client has left
-    await sio_server.emit('room_message', f'User {sid} has left the room!', room=roomId)
+    await sio_server.emit('room', {
+        'status': 281,  # 281 Room Left
+        'detail': f"left"
+    }, room=roomId)
     async with redis_logs_db_context() as redis_logger:
         await log_to_redis("Track", f"Sid {sid} has left room {roomId}", redis_logger)
 
@@ -117,7 +128,9 @@ async def move(sid, data):
     if roomId and lat and long:
         await sio_server.emit('move', {'sid': sid, 'lat': lat, 'long': long}, room=str(roomId))
     else:
-        await sio_server.emit('error_message', 'Incomplete data provided in move event', room=sid)
+        await sio_server.emit('error', {
+            'detail': 'incomplete'
+        }, room=sid)
 
 
 @sio_server.event

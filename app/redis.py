@@ -68,8 +68,10 @@ async def log_to_redis(category: str, message: str, r: aioredis.Redis):
         "category": category
     }
 
-    # Add the log to the stream
-    await r.xadd(f"logs:{category}", log_data)
+    try:
+        await r.xadd(f"logs:{category}", log_data)
+    except Exception as e:
+        print(f"Error logging to Redis: {e}")
 
     await r.xtrim(f"logs:{category}", maxlen=100, approximate=False)
 

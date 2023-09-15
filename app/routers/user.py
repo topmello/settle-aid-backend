@@ -8,8 +8,7 @@ from .. import schemas, models, oauth2
 
 from ..database import get_db
 from ..limiter import limiter
-import aioredis
-from ..redis import get_redis_logs_db, log_to_redis
+from ..exceptions import UserNotFoundException, UserAlreadyExistsException, NotAuthorisedException
 
 from models.name_generator import name_generator, generate_name
 
@@ -35,10 +34,7 @@ def verify(password: str, hashed_password: str):
 @limiter.limit("1/second")
 async def generate_username(
         request: Request,
-        db: Session = Depends(get_db),
-        r_logger: aioredis.Redis = Depends(get_redis_logs_db)):
-
-    await log_to_redis("User", f"{request.method} request to {request.url.path}", r_logger)
+        db: Session = Depends(get_db)):
 
     query = db.query(models.User.username)
     generated_name = generate_name(name_generator)
@@ -54,22 +50,18 @@ async def get_user(
         request: Request,
         user_id: int,
         db: Session = Depends(get_db),
-        current_user=Depends(oauth2.get_current_user),
-        r_logger: aioredis.Redis = Depends(get_redis_logs_db)):
-
-    await log_to_redis("User", f"{request.method} request to {request.url.path}", r_logger)
+        current_user=Depends(oauth2.get_current_user)):
 
     # Check if user_id is the same as current_user
     if user_id != current_user.user_id:
-        raise HTTPException(status_code=403, detail="Not authorized")
+        raise NotAuthorisedException()
 
     user = db.query(models.User).filter(models.User.user_id == user_id).first()
     prompts = db.query(models.Prompt).filter(
         models.Prompt.created_by_user_id == user_id).limit(10).all()
 
     if user is None:
-        await log_to_redis("User", f"User not found", r_logger)
-        raise HTTPException(status_code=404, detail="User not found")
+        raise UserNotFoundException()
 
     user_out = schemas.UserOut(
         user_id=user.user_id,
@@ -77,8 +69,6 @@ async def get_user(
         created_at=user.created_at,
         prompts=[schemas.Prompt.from_orm(prompt) for prompt in prompts]
     )
-
-    await log_to_redis("User", f"User found", r_logger)
 
     return user_out
 
@@ -88,15 +78,10 @@ async def get_user(
 async def create_user(
         request: Request,
         user: schemas.UserCreate,
-        db: Session = Depends(get_db),
-        r_logger: aioredis.Redis = Depends(get_redis_logs_db)):
-
-    await log_to_redis("User", f"{request.method} request to {request.url.path}", r_logger)
+        db: Session = Depends(get_db)):
 
     if db.query(models.User).filter(models.User.username == user.username).first():
-        await log_to_redis("User", f"Username already registered", r_logger)
-        raise HTTPException(
-            status_code=400, detail="Username already registered")
+        raise UserAlreadyExistsException()
 
     # Hash password
     hashed_password = hash(user.password)
@@ -108,5 +93,4 @@ async def create_user(
     db.commit()
     db.refresh(new_user)
 
-    await log_to_redis("User", f"User created", r_logger)
     return new_user

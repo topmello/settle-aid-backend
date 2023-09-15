@@ -1,17 +1,67 @@
-from fastapi import Depends, HTTPException, Request
+from fastapi import Depends, Request
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
+import json
 
 from .config import settings
-from .schemas import TokenData
+from .schemas import TokenData, User
 from .database import get_db
 from . import models
 import aioredis
-from .redis import get_redis_logs_db, log_to_redis
+from .redis import get_redis_refresh_token_db
+from .exceptions import InvalidCredentialsException, UserNotFoundException, InvalidRefreshTokenException
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+
+class CustomOAuth2PasswordBearer(OAuth2PasswordBearer):
+    def __init__(self, tokenUrl, **kwargs):
+        super().__init__(tokenUrl, **kwargs)
+
+    async def __call__(self, request: Request):
+        token = request.headers.get(
+            "Authorization", "").split("Bearer ")[-1].strip()
+        if not token:
+            raise InvalidCredentialsException()
+        return token
+
+
+oauth2_scheme = CustomOAuth2PasswordBearer(tokenUrl="login")
+
+
+async def get_user(
+    username: str,
+    db: Session = Depends(get_db),
+    r: aioredis.Redis = Depends(get_redis_refresh_token_db)
+):
+
+    # Check if user data is in Redis cache
+    cached_user_data = await r.get(f"user_data:{username}")
+
+    if cached_user_data != "null" and cached_user_data is not None:
+        user = json.loads(cached_user_data)
+        user = User(**user)
+
+    else:
+        user = db.query(models.User).filter(
+            models.User.username == username).first()
+
+        if not user:
+            raise UserNotFoundException()
+
+        user = User(**user.__dict__)
+        # Cache the user data in Redis for future requests
+        await r.setex(
+            f"user_data:{username}",
+            settings.USER_CACHE_EXPIRY,
+            json.dumps({
+                "user_id": user.user_id,
+                "username": user.username,
+                "password": user.password,
+                "created_at": user.created_at.isoformat()
+            }))
+
+    return user
 
 
 def create_access_token(data: dict):
@@ -35,10 +85,7 @@ def create_access_token_v2(data: dict):
     return encoded_jwt, expire
 
 
-async def verify_access_token(
-        token: str,
-        credentials_exception,
-        r_logger: aioredis.Redis = Depends(get_redis_logs_db)):
+async def verify_access_token(token: str):
     try:
         payload = jwt.decode(token, settings.SECRET_KEY,
                              algorithms=[settings.ALGORITHM])
@@ -46,42 +93,30 @@ async def verify_access_token(
         username: str = payload.get("username")
 
         if username is None:
-            raise credentials_exception
+            raise InvalidCredentialsException()
 
         return TokenData(user_id=user_id, username=username)
 
     except JWTError:
-        raise credentials_exception
+        raise InvalidCredentialsException()
 
 
 async def get_current_user(
         request: Request,
         token: str = Depends(oauth2_scheme),
         db: Session = Depends(get_db),
-        r_logger: aioredis.Redis = Depends(get_redis_logs_db)):
+        r: aioredis.Redis = Depends(get_redis_refresh_token_db)):
 
-    endpoint = request.url.path
+    token_data = await verify_access_token(token)
 
-    await log_to_redis("Auth", f"Endpoint {endpoint} - Retrieving current user", r_logger)
+    user = await get_user(token_data.username, db, r)
 
-    credentials_exception = HTTPException(
-        status_code=401,
-        detail="Invalid credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    token_data = await verify_access_token(token, credentials_exception)
-    user_query = db.query(models.User).filter(
-        models.User.user_id == token_data.user_id)
-
-    await log_to_redis("Auth", f"Endpoint {endpoint} - Current user retrieved", r_logger)
-
-    return user_query.first()
+    return user
 
 
 def create_refresh_token(
         data: dict,
-        expires_delta: timedelta = None,
-        r_logger: aioredis.Redis = Depends(get_redis_logs_db)):
+        expires_delta: timedelta = None):
 
     to_encode = data.copy()
     if expires_delta:
@@ -101,5 +136,5 @@ def verify_refresh_token(token: str):
                              algorithms=[settings.ALGORITHM])
         user_id: int = payload.get("user_id")
     except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid refresh token")
+        raise InvalidRefreshTokenException()
     return user_id

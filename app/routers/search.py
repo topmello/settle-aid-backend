@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 
 from sqlalchemy import select, desc, func, text
@@ -14,11 +14,9 @@ from ..database import get_db
 from ..mapbox import get_route
 
 from ..limiter import limiter
-
+from ..exceptions import LocationNotFoundException, InvalidSearchQueryException
 from .. import models, schemas, oauth2
 
-import aioredis
-from ..redis import get_redis_logs_db, log_to_redis
 
 router = APIRouter(
     prefix="/search",
@@ -56,10 +54,7 @@ async def search_by_query_seq(
         request: Request,
         querys: schemas.RouteQuery,
         db: Session = Depends(get_db),
-        current_user: schemas.User = Depends(oauth2.get_current_user),
-        r_logger: aioredis.Redis = Depends(get_redis_logs_db)):
-
-    await log_to_redis("Search", f"{request.method} request to {request.url.path}", r_logger)
+        current_user: schemas.User = Depends(oauth2.get_current_user)):
 
     results = []
     seen_places = set()
@@ -83,12 +78,7 @@ async def search_by_query_seq(
         Model = LOCATION_TYPE_MODELS.get(querys.location_type[i])
 
         if not Model:
-            await log_to_redis(
-                "Search",
-                f"Location type not found only landmark, restaurant, grocery, pharmacy allowed",
-                r_logger)
-            raise HTTPException(
-                status_code=404, detail="Location type not found")
+            raise LocationNotFoundException()
 
         query_result = (
             db.query(
@@ -126,8 +116,7 @@ async def search_by_query_seq(
             seen_places.add(chosen_location.name)
 
         else:
-            await log_to_redis("Search", f"No results found", r_logger)
-            raise HTTPException(status_code=404, detail="No results found")
+            raise LocationNotFoundException()
 
         prompt_location = PROMPT_LOCATION_TYPE_MODELS.get(
             querys.location_type[i])
@@ -141,8 +130,7 @@ async def search_by_query_seq(
         db.commit()
 
     if results == []:
-        await log_to_redis("Search", f"No results found", r_logger)
-        raise HTTPException(status_code=404, detail="No results found")
+        raise LocationNotFoundException()
 
     # Create route
     location_names = [location.name for location in results]
@@ -174,7 +162,6 @@ async def search_by_query_seq(
         instructions=instructions,
         duration=duration
     )
-    await log_to_redis("Search", f"Route found", r_logger)
     return out
 
 
@@ -184,10 +171,15 @@ async def search_by_query_seq_v2(
         request: Request,
         querys: schemas.RouteQueryV2,
         db: Session = Depends(get_db),
-        current_user: schemas.User = Depends(oauth2.get_current_user),
-        r_logger: aioredis.Redis = Depends(get_redis_logs_db)):
+        current_user: schemas.User = Depends(oauth2.get_current_user)):
 
-    await log_to_redis("Search", f"{request.method} request to {request.url.path}", r_logger)
+    if querys.negative_query is None:
+        querys.negative_query = ["" for _ in range(len(querys.query))]
+        querys.negative_similarity_threshold = 0
+    if len(querys.location_type) != len(querys.query):
+        raise InvalidSearchQueryException()
+    if len(querys.location_type) != len(querys.negative_query):
+        raise InvalidSearchQueryException()
 
     results = []
     seen_places = set()
@@ -213,12 +205,7 @@ async def search_by_query_seq_v2(
         Model = LOCATION_TYPE_MODELS.get(querys.location_type[i])
 
         if not Model:
-            await log_to_redis(
-                "Search",
-                f"Location type not found only landmark, restaurant, grocery, pharmacy allowed",
-                r_logger)
-            raise HTTPException(
-                status_code=404, detail="Location type not found")
+            raise LocationNotFoundException()
 
         query_result = (
             db.query(
@@ -257,8 +244,7 @@ async def search_by_query_seq_v2(
             seen_places.add(chosen_location.name)
 
         else:
-            await log_to_redis("Search", f"No results found", r_logger)
-            raise HTTPException(status_code=404, detail="No results found")
+            raise LocationNotFoundException()
 
         prompt_location = PROMPT_LOCATION_TYPE_MODELS.get(
             querys.location_type[i])
@@ -272,8 +258,7 @@ async def search_by_query_seq_v2(
         db.commit()
 
     if results == []:
-        await log_to_redis("Search", f"No results found", r_logger)
-        raise HTTPException(status_code=404, detail="No results found")
+        raise LocationNotFoundException()
 
     # Create route
     location_names = [location.name for location in results]
@@ -321,6 +306,5 @@ async def search_by_query_seq_v2(
         instructions=instructions,
         duration=duration
     )
-    await log_to_redis("Search", f"Route found", r_logger)
 
     return out

@@ -27,6 +27,7 @@ from . import models
 from .limiter import limiter
 from .redis import get_redis_logs_db, redis_logs_db_context, log_to_redis, get_logs_from_redis
 
+from .exceptions import *
 
 description = """
 ## Authentication 🔑
@@ -122,17 +123,6 @@ async def test(request: Request):
     return {"message": "Hello World"}
 
 
-@app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    endpoint = request.url.path
-    # Log the error details
-    async with redis_logs_db_context() as redis_logger:
-        await log_to_redis("Validation", f"{request.method} request to {request.url.path}: {str(exc.errors())}", redis_logger)
-
-    # Return the default FastAPI error response
-    return JSONResponse(content={"detail": exc.errors()}, status_code=400)
-
-
 @app.exception_handler(RateLimitExceeded)
 async def ratelimit_exception(request: Request, exc: RateLimitExceeded):
     # Log the rate limit exceedance to Redis
@@ -176,7 +166,7 @@ async def openapi(username: str = Depends(get_current_username_doc)):
 @app.get("/logs")
 async def get_logs_ui(request: Request, r: aioredis.Redis = Depends(get_redis_logs_db)):
     categories = ["Auth", "Search", "Route",
-                  "Track", "Translate", "User", "Vote", "Validation", "RateLimit"]
+                  "Track", "User", "Vote", "Other"]
     logs_by_category = {}
 
     for category in categories:
@@ -188,7 +178,7 @@ async def get_logs_ui(request: Request, r: aioredis.Redis = Depends(get_redis_lo
 @app.get("/logs/stream/")
 async def logs_stream(r: aioredis.Redis = Depends(get_redis_logs_db)):
     categories = ["Auth", "Search", "Route",
-                  "Track", "Translate", "User", "Vote", "Validation", "RateLimit"]
+                  "Track", "User", "Vote", "Other"]
     logs_category = [f"logs:{category}" for category in categories]
 
     async def event_stream():
@@ -200,6 +190,7 @@ async def logs_stream(r: aioredis.Redis = Depends(get_redis_logs_db)):
             # Wait for log entries starting from the current ID
             entries = await r.xread(streams_dict, count=1, block=10000)
             if not entries:
+                yield 'data: {"message": "ping"}\n\n'
                 await asyncio.sleep(1)
                 inactive_time += 1
 
@@ -211,6 +202,301 @@ async def logs_stream(r: aioredis.Redis = Depends(get_redis_logs_db)):
             for _, items in entries:
                 for id, log_data in items:
                     current_id = id  # Update the current ID
+                    print(json.dumps(log_data))
                     yield f"id: {id}\ndata: {json.dumps(log_data)}\n\n"
 
-    return StreamingResponse(event_stream(), media_type="text/event-stream")
+    return StreamingResponse(event_stream(), media_type="text/event-stream", headers={"Cache-Control": "no-cache"})
+
+
+def get_log_category(path: str) -> str:
+    if path.startswith("/login"):
+        return "Auth"
+    elif path.startswith("/search"):
+        return "Search"
+    elif path.startswith("/route"):
+        return "Route"
+    elif path.startswith("/track"):
+        return "Track"
+    elif path.startswith("/user"):
+        return "User"
+    elif path.startswith("/vote"):
+        return "Vote"
+    else:
+        return "Other"
+
+
+class LoggingMiddleware:
+    async def __call__(self, request: Request, call_next):
+
+        response = await call_next(request)
+
+        status_code = response.status_code
+
+        if status_code < 400 or status_code >= 500:
+
+            async with redis_logs_db_context() as redis_logger:
+
+                log_message = f"{request.method} request to {request.url.path}: {status_code}"
+                await log_to_redis(
+                    get_log_category(request.url.path),
+                    log_message,
+                    redis_logger)
+                return response
+        else:
+            return response
+
+
+app.middleware("http")(LoggingMiddleware())
+
+
+async def log_exception(request: Request, exc: HTTPException):
+    try:
+        async with redis_logs_db_context() as redis_logger:
+
+            log_message = f"{request.method} request to {request.url.path}: {exc.status_code} - {exc.detail['type']} - {exc.detail['msg']}"
+
+            await log_to_redis(
+                get_log_category(request.url.path),
+                log_message,
+                redis_logger)
+    except Exception as e:
+        print(f"Error logging to Redis: {e}")
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+
+    errors = exc.errors()
+    if len(errors) == 1:
+        error = list(errors)[0]
+        error_type = error.get("type", "unknown")
+        error_msg = error.get("msg", "An error occurred")
+
+        async with redis_logs_db_context() as redis_logger:
+
+            log_message = f"{request.method} request to {request.url.path}: 400 - {error_type} - {error_msg}"
+
+            await log_to_redis(
+                get_log_category(request.url.path),
+                log_message,
+                redis_logger)
+
+        return JSONResponse(status_code=400, content={"detail": {
+            "type": error_type,
+            "msg": error_msg
+        }})
+    else:
+        extracted_errors = []
+        for error in exc.errors():
+            extracted_errors.append({
+                "type": error.get("type", "unknown"),
+                "msg": error.get("msg", "An error occurred")
+            })
+
+        async with redis_logs_db_context() as redis_logger:
+
+            log_message = f"{request.method} request to {request.url.path}: 400 - {extracted_errors}"
+
+            await log_to_redis(
+                get_log_category(request.url.path),
+                log_message,
+                redis_logger)
+        return JSONResponse(status_code=400, content={"detail": extracted_errors})
+
+
+@app.exception_handler(InvalidCredentialsException)
+async def invalid_credentials_exception_handler(
+        request: Request,
+        exc: InvalidCredentialsException):
+
+    await log_exception(request, exc)
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "details": {
+                "type": exc.detail["type"],
+                "msg": exc.detail["msg"]
+            }
+        },
+    )
+
+
+@app.exception_handler(UserNotFoundException)
+async def user_not_found_exception_handler(
+        request: Request,
+        exc: UserNotFoundException):
+
+    await log_exception(request, exc)
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "details": {
+                "type": exc.detail["type"],
+                "msg": exc.detail["msg"]
+            }
+        },
+    )
+
+
+@app.exception_handler(InvalidRefreshTokenException)
+async def invalid_refresh_token_exception_handler(
+        request: Request,
+        exc: InvalidRefreshTokenException):
+
+    await log_exception(request, exc)
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "details": {
+                "type": exc.detail["type"],
+                "msg": exc.detail["msg"]
+            }
+        },
+    )
+
+
+@app.exception_handler(UserAlreadyExistsException)
+async def user_already_exists_exception_handler(
+        request: Request,
+        exc: UserAlreadyExistsException):
+
+    await log_exception(request, exc)
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "details": {
+                "type": exc.detail["type"],
+                "msg": exc.detail["msg"]
+            }
+        },
+    )
+
+
+@app.exception_handler(NotAuthorisedException)
+async def not_authorised_exception_handler(
+        request: Request,
+        exc: NotAuthorisedException):
+
+    await log_exception(request, exc)
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "details": {
+                "type": exc.detail["type"],
+                "msg": exc.detail["msg"]
+            }
+        },
+    )
+
+
+@app.exception_handler(LocationNotFoundException)
+async def location_not_found_exception_handler(
+        request: Request,
+        exc: LocationNotFoundException):
+
+    await log_exception(request, exc)
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "details": {
+                "type": exc.detail["type"],
+                "msg": exc.detail["msg"]
+            }
+        },
+    )
+
+
+@app.exception_handler(InvalidSearchQueryException)
+async def invalid_search_query_exception_handler(
+        request: Request,
+        exc: InvalidSearchQueryException):
+
+    await log_exception(request, exc)
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "details": {
+                "type": exc.detail["type"],
+                "msg": exc.detail["msg"]
+            }
+        },
+    )
+
+
+@app.exception_handler(RouteNotFoundException)
+async def route_not_found_exception_handler(
+        request: Request,
+        exc: RouteNotFoundException):
+
+    await log_exception(request, exc)
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "details": {
+                "type": exc.detail["type"],
+                "msg": exc.detail["msg"]
+            }
+        },
+    )
+
+
+@app.exception_handler(ParametersTooLargeException)
+async def parameters_too_large_exception_handler(
+        request: Request,
+        exc: ParametersTooLargeException):
+
+    await log_exception(request, exc)
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "details": {
+                "type": exc.detail["type"],
+                "msg": exc.detail["msg"]
+            }
+        },
+    )
+
+
+@app.exception_handler(AlreadyVotedException)
+async def already_voted_exception_handler(
+        request: Request,
+        exc: AlreadyVotedException):
+
+    await log_exception(request, exc)
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "details": {
+                "type": exc.detail["type"],
+                "msg": exc.detail["msg"]
+            }
+        },
+    )
+
+
+@app.exception_handler(VoteNotFoundException)
+async def vote_not_found_exception_handler(
+        request: Request,
+        exc: VoteNotFoundException):
+
+    await log_exception(request, exc)
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "details": {
+                "type": exc.detail["type"],
+                "msg": exc.detail["msg"]
+            }
+        },
+    )
