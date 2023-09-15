@@ -56,13 +56,22 @@ For documentation for SocketIO connection, please refer to the [Topmello documen
 ## Logs 📜
 Please go to /logs/ to view the logs.
 
-Some general HTTP status codes and guidelines:
-- 401: Unauthorized: This error occurs when the user is not authenticated. The logs should be in the Auth category.
-- 422: Unprocessable Entity (Validation Error): This error occurs when the request body is invalid. The logs should be in the Validation category.
-- 429: Too Many Requests: This error occurs when the user exceeds the rate limit. The logs should be in the RateLimit category.
+## HTTP Exceptions 🚨
+| Exception Type               | Status Code | Type                  | Message                                  |
+| ---------------------------- | ----------- | --------------------- | ---------------------------------------- |
+| CustomHTTPException          | 400         | default_type          | DefaultMessage                           |
+| InvalidCredentialsException  | 401         | invalid_credentials   | Invalid credentials                      |
+| UserNotFoundException        | 404         | user_not_found        | User not found                           |
+| UserAlreadyExistsException   | 400         | user_already_exists   | User already exists                      |
+| InvalidRefreshTokenException | 404         | invalid_refresh_token | Invalid refresh token                    |
+| NotAuthorisedException       | 403         | not_authorised        | Not authorised                           |
+| LocationNotFoundException    | 404         | no_location           | Not found any location in the given area |
+| InvalidSearchQueryException  | 400         | invalid_search_query  | Invalid search query                     |
+| RouteNotFoundException       | 404         | no_route              | Not found any route in the given area    |
+| ParametersTooLargeException  | 400         | parameters_too_large  | Parameters too large                     |
+| AlreadyVotedException        | 409         | already_voted         | Already voted                            |
+| VoteNotFoundException        | 404         | vote_not_found        | Vote not found                           |
 
-Notes:
-- All the timestamps are in UTC.
 
 """
 
