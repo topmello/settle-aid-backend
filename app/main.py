@@ -76,6 +76,7 @@ Please go to /logs/ to view the logs.
 | Event        | Message Type   | Details Type      | Details Msg                                    |
 |--------------|----------------|-------------------|------------------------------------------------|
 | `connect`    | `error`        | `invalid_credentials` | 'Invalid credentials'                      |
+|              | N/A            | Varies with `HTTPException` | Depends on the error detail from exception |
 | `join_room`  | `error`         | `no_room`            | 'Room not found or has expired'                |
 |              | `room`         | `joined_room`        | E.g. "admin has joined room 448408"            |
 | `leave_room` | `room`         | `lefted_room`        | E.g. "admin has left room 448408"              |

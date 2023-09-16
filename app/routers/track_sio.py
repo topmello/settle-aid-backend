@@ -64,6 +64,12 @@ async def connect(sid, environ):
             await sio_server.disconnect(sid)
 
     except HTTPException as e:
+        await sio_server.emit('error', {
+            "details": {
+                'type': e.detail.get('type'),
+                'msg': e.detail.get('msg')
+            }
+        }, room=sid)
         async with redis_logs_db_context() as redis_logger:
             await log_to_redis("Track", f"invalid_credentials {e.detail}", redis_logger)
         await sio_server.disconnect(sid)
@@ -154,13 +160,16 @@ async def move(sid, data):
 async def disconnect(sid):
     async with redis_room_db_context() as redis_room:
         username = await redis_room.get(f"userSid:{sid}")
-        redis_room.delete(f"userSid:{sid}")
+
     await sio_server.emit('room', {
         "details": {
             'type': 'disconnected',
             'msg': f"{username} disconnected"
         }
     }, room=username)
+
+    async with redis_room_db_context() as redis_room:
+        await redis_room.delete(f"userSid:{sid}")
 
     await sio_server.disconnect(sid)
     async with redis_logs_db_context() as redis_logger:
