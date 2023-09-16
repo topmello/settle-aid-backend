@@ -25,6 +25,12 @@ export const Chat = () => {
       setLong(''); 
     }
   };
+
+  const joinTheRoom = (e) => {
+    e.preventDefault();
+    joinRoom(roomId);
+}
+
   return (
     <>
       <h2>status: {isConnected ? 'connected' : 'disconnected'}</h2>
@@ -73,7 +79,7 @@ export const Chat = () => {
         value={roomId}
         onChange={(event) => setRoomId(event.target.value)}
       />
-      <button onClick={() => joinRoom(roomId)}>
+      <button onClick={joinTheRoom}>
         Join Room
       </button>
       <button onClick={() => handleLeaveRoom(roomId)}>

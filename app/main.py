@@ -72,6 +72,23 @@ Please go to /logs/ to view the logs.
 | AlreadyVotedException        | 409         | already_voted         | Already voted                            |
 | VoteNotFoundException        | 404         | vote_not_found        | Vote not found                           |
 
+## SocketIO messages 📨
+| Event        | Message Type   | Details Type      | Details Msg                                    |
+|--------------|----------------|-------------------|------------------------------------------------|
+| `connect`    | `error`        | `invalid_credentials` | 'Invalid credentials'                      |
+| `join_room`  | `error`         | `no_room`            | 'Room not found or has expired'                |
+|              | `room`         | `joined_room`        | E.g. "admin has joined room 448408"            |
+| `leave_room` | `room`         | `lefted_room`        | E.g. "admin has left room 448408"              |
+| `move`       | `move`         | `success`            | Object with `lat` and `long`, e.g. `{lat: 34, long: 34}` |
+|              | `error`        | `invalid_data`       | 'Invalid data'                                  |
+| `disconnect` | `room`         | `disconnected`       | E.g. "admin disconnected"                       |
+
+To get message in the frontend:
+
+- const messageType = message.type;
+- const detailsType = message.message.details.type;
+- const detailsMsg = message.message.details.msg;
+
 
 """
 

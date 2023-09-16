@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 import aioredis
 from ..database import get_db
@@ -28,6 +28,6 @@ async def generate_room_pin(
         redis_room_db: aioredis.Redis = Depends(get_redis_room_db)):
 
     room_id = str(random.randint(100000, 999999))
-    await redis_room_db.setex(room_id, ROOM_EXPIRY_DURATION, 'active')
+    await redis_room_db.setex(f"roomId:{room_id}", ROOM_EXPIRY_DURATION, 'active')
 
     return schemas.TrackRoomOut(room_id=room_id)
