@@ -55,6 +55,19 @@ async def search_by_query_seq(
         querys: schemas.RouteQuery,
         db: Session = Depends(get_db),
         current_user: schemas.User = Depends(oauth2.get_current_user)):
+    """
+    Search for a route based on user queries and the current location.
+
+    Args:
+    - querys (schemas.RouteQuery): The user query data containing location type, latitude, longitude, distance threshold, similarity threshold, and route type.
+    - Logged in required: The user must be logged in to search for a route.
+
+    Raises:
+    - LocationNotFoundException: If no matching location is found for a given query.
+
+    Returns:
+    - schemas.RouteOut: The resulting route including locations, route coordinates, instructions, and duration.
+    """
 
     results = []
     seen_places = set()
@@ -172,6 +185,22 @@ async def search_by_query_seq_v2(
         querys: schemas.RouteQueryV2,
         db: Session = Depends(get_db),
         current_user: schemas.User = Depends(oauth2.get_current_user)):
+    """
+    Search for a route based on user queries, negative queries, and the current location (Version 2).
+
+    This endpoint allows users to provide negative queries to exclude certain results.
+
+    Args:
+    - querys (schemas.RouteQueryV2): The user query data including location type, latitude, longitude, distance threshold, similarity threshold, negative query, negative similarity threshold, and route type.
+    - Logged in required: The user must be logged in to search for a route.
+
+    Raises:
+    - LocationNotFoundException: If no matching location is found for a given query.
+    - InvalidSearchQueryException: If the provided queries are inconsistent in length or type.
+
+    Returns:
+    - schemas.RouteOutV2: The resulting route including route ID, locations, route coordinates, instructions, and duration.
+    """
 
     if querys.negative_query is None:
         querys.negative_query = ["" for _ in range(len(querys.query))]

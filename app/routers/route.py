@@ -42,6 +42,18 @@ async def get_route(
         request: Request,
         route_id: int,
         db: Session = Depends(get_db)):
+    """
+    Retrieve route details by route ID.
+
+    Args:
+    - route_id (int): The ID of the desired route.
+
+    Raises:
+    - RouteNotFoundException: If no route is found with the specified ID.
+
+    Returns:
+    - schemas.RouteVoteOut: The route details and the number of votes.
+    """
 
     if db.query(func.count(models.Route.route_id)).scalar() == 0:
         raise RouteNotFoundException()
@@ -74,8 +86,23 @@ async def get_route(
 @limiter.limit("5/second")
 async def get_routes(
         request: Request, user_id: int,
-        limit: int = 10, db:
-        Session = Depends(get_db)):
+        limit: int = 10,
+        db: Session = Depends(get_db)):
+    """
+    Retrieve a list of routes created by a specified user.
+
+    Args:
+    - user_id (int): The ID of the user whose routes are to be retrieved.
+    - limit (int): The maximum number of routes to retrieve. Defaults to 10.
+
+    Raises:
+    - ParametersTooLargeException: If the limit specified exceeds 50.
+    - UserNotFoundException: If no user is found with the specified ID.
+    - RouteNotFoundException: If no routes are found.
+
+    Returns:
+    - List[schemas.RouteVoteOut]: A list of routes and their respective vote counts.
+    """
 
     if limit > 50:
         raise ParametersTooLargeException()
@@ -109,6 +136,23 @@ async def get_routes(
         user_id: int,
         limit: int = 10,
         db: Session = Depends(get_db)):
+    """
+    Retrieve a list of favorite routes of a specified user.
+
+    Args:
+    - user_id (int): The ID of the user whose favorite routes are to be retrieved.
+    - limit (int): The maximum number of favorite routes to retrieve. Defaults to 10.
+
+    Raises:
+    - ParametersTooLargeException: If the limit specified exceeds 50.
+    - UserNotFoundException: If no user is found with the specified ID.
+    - RouteNotFoundException: If no routes are found.
+
+    Returns:
+    - List[schemas.RouteVoteOut]: A list of favorite routes and their respective vote counts.
+
+
+    """
 
     if limit > 50:
         raise ParametersTooLargeException()

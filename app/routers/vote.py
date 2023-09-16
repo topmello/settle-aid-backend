@@ -16,6 +16,21 @@ async def vote(
         db: Session = Depends(get_db),
         current_user: schemas.User = Depends(oauth2.get_current_user)
 ):
+    """
+    Allow a user to vote or remove their vote for a specific route.
+
+    Args:
+    - vote (schemas.VoteIn): Details of the vote, including the route to vote for and the voting action (vote or un-vote) as boolean.
+    - Logged in required: The user must be logged in to vote.
+
+    Raises:
+    - RouteNotFoundException: If no routes are found in the database.
+    - AlreadyVotedException: If the user has already voted for the specified route and is trying to vote again.
+    - VoteNotFoundException: If the user tries to remove a vote but hasn't voted for the specified route in the first place.
+
+    Returns:
+    - dict: A dictionary containing details of the voting action, including a type (if voted) and a message.
+    """
 
     if db.query(func.count(models.Route.route_id)).scalar() == 0:
         raise RouteNotFoundException()

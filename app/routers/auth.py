@@ -27,6 +27,19 @@ async def login(
         request: Request,
         user_credentials: schemas.LoginRequest,
         db: Session = Depends(get_db)):
+    """
+    Authenticate a user and return an access token.
+
+    Args:
+    - user_credentials (schemas.LoginRequest): Contains the user's username and password.
+
+    Raises:
+    - UserNotFoundException: If the specified user does not exist.
+    - InvalidCredentialsException: If the password verification fails.
+
+    Returns:
+    - dict: JWT token with token type.
+    """
     # user_credentials contains username and password
     user_query = db.query(models.User).filter(
         models.User.username == user_credentials.username)
@@ -51,6 +64,19 @@ async def login(
         user_credentials: schemas.LoginRequest,
         db: Session = Depends(get_db),
         r: aioredis.Redis = Depends(get_redis_refresh_token_db)):
+    """
+    Authenticate a user and return an enhanced access token (v2).
+
+    Args:
+    - user_credentials (schemas.LoginRequest): Contains the user's username and password.
+
+    Raises:
+    - UserNotFoundException: If the specified user does not exist.
+    - InvalidCredentialsException: If the password verification fails.
+
+    Returns:
+    - dict: JWT token, refresh token, token type, and respective expiries.
+    """
 
     user = await oauth2.get_user(user_credentials.username, db, r)
 
@@ -101,6 +127,18 @@ async def refresh_token(
         refresh_token: schemas.RefreshTokenIn,
         db: Session = Depends(get_db),
         r: aioredis.Redis = Depends(get_redis_refresh_token_db)):
+    """
+    Refresh an access token using a provided refresh token.
+
+    Args:
+    - refresh_token (schemas.RefreshTokenIn): Contains the refresh token used to generate a new access token.
+
+    Raises:
+    - InvalidRefreshTokenException: If the refresh token is invalid or has expired.
+
+    Returns:
+    - dict: New JWT token, existing refresh token, token type, and respective expiries.
+    """
 
     # Verify the JWT signature and get the user_id
     user_id = oauth2.verify_refresh_token(refresh_token.refresh_token)

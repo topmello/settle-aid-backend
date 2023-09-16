@@ -30,49 +30,37 @@ from .redis import get_redis_logs_db, redis_logs_db_context, log_to_redis, get_l
 from .exceptions import *
 
 description = """
-## Authentication 🔑
-
-- Login Endpoint (/login): Authenticates the user and returns a JWT token. If the user exceeds the maximum allowed login attempts, their IP is blocked for a specified duration.
-- Login V2 Endpoint (/v2/login): An enhanced version of the login endpoint. In addition to authenticating the user and returning a JWT token, it also provides a refresh token. If a user already has a refresh token, the old one is deleted and a new one is generated.
-- Refresh Token Endpoint (/v2/token/refresh): Allows the user to get a new JWT token using their refresh token. The refresh token remains the same.
-
-## User 👩‍🦳
-
-- Generate Username Endpoint (/generate): Generates a unique username. If the generated name exists in the database, it keeps generating until a unique name is found.
-- Get User Details Endpoint (/{user_id}): Retrieves the details of a user and their history based on the provided user ID.
-- Create User Endpoint (/): Creates a new user in the database.
-
-
-## Search Route 🛵
-- Search by Query Sequence Endpoint (/route/): Searches for a sequence of locations based on the user's queries. For each query, it finds a location that matches the query's embedding and then creates a route based on the sequence of found locations.
-
-## Translate 🇦🇺
-- Translate Endpoint (/): Translates a list of texts into the target language (English) using the Google Cloud Translation API.
-
-## Track 🛤️
-- SocketIO connection to track a user's location
-For documentation for SocketIO connection, please refer to the [Topmello documentation](https://topmello.github.io/docs/backend/tracker).
-
 ## Logs 📜
 Please go to /logs/ to view the logs.
 
 ## HTTP Exceptions 🚨
-| Exception Type               | Status Code | Type                  | Message                                  |
-| ---------------------------- | ----------- | --------------------- | ---------------------------------------- |
-| CustomHTTPException          | 400         | default_type          | DefaultMessage                           |
-| InvalidCredentialsException  | 401         | invalid_credentials   | Invalid credentials                      |
-| UserNotFoundException        | 404         | user_not_found        | User not found                           |
-| UserAlreadyExistsException   | 400         | user_already_exists   | User already exists                      |
-| InvalidRefreshTokenException | 404         | invalid_refresh_token | Invalid refresh token                    |
-| NotAuthorisedException       | 403         | not_authorised        | Not authorised                           |
-| LocationNotFoundException    | 404         | no_location           | Not found any location in the given area |
-| InvalidSearchQueryException  | 400         | invalid_search_query  | Invalid search query                     |
-| RouteNotFoundException       | 404         | no_route              | Not found any route in the given area    |
-| ParametersTooLargeException  | 400         | parameters_too_large  | Parameters too large                     |
-| AlreadyVotedException        | 409         | already_voted         | Already voted                            |
-| VoteNotFoundException        | 404         | vote_not_found        | Vote not found                           |
+| Exception Type               | Status Code | Type                      | Message                                                                          |
+| ---------------------------- | ----------- | ------------------------- | -------------------------------------------------------------------------------- |
+| CustomHTTPException          | 400         | `default_type`            | DefaultMessage                                                                   |
+| InvalidCredentialsException  | 401         | `invalid_credentials`     | Invalid credentials                                                              |
+| UserNotFoundException        | 404         | `user_not_found`          | User not found                                                                   |
+| UserAlreadyExistsException   | 400         | `user_already_exists`     | User already exists                                                              |
+| InvalidRefreshTokenException | 404         | `invalid_refresh_token`   | Invalid refresh token                                                            |
+| NotAuthorisedException       | 403         | `not_authorised`          | Not authorised                                                                   |
+| LocationNotFoundException    | 404         | `no_location`             | Not found any location in the given area                                         |
+| InvalidSearchQueryException  | 400         | `invalid_search_query`    | Invalid search query                                                             |
+| RouteNotFoundException       | 404         | `no_route`                | Not found any route in the given area                                            |
+| ParametersTooLargeException  | 400         | `parameters_too_large`    | Parameters too large                                                             |
+| AlreadyVotedException        | 409         | `already_voted`           | Already voted                                                                    |
+| VoteNotFoundException        | 404         | `vote_not_found`          | Vote not found                                                                   |
+| RequestValidationError       | 400         | `missing`                 | Field required                                                                   |
+| RequestValidationError       | 400         | `string_pattern_mismatch` | String should match pattern                                                      |
+| RequestValidationError       | 400         | `json_invalid`            | JSON decode error                                                                |
+| RequestValidationError       | 400         | `string_type`             | Input should be a valid string                                                   |
+| RequestValidationError       | 400         | `string_too_short`        | String should have at least {} characters                                        |
+| RequestValidationError       | 400         | `string_too_long`         | String should have at most {} characters                                         |
+| RequestValidationError       | 400         | `value_error`             | Location type must be one of 'landmark', 'restaurant', 'grocery', or 'pharmacy'. |
+| RequestValidationError       | 400         | `value_error`             | Route type must be one of 'driving', 'walking', or 'cycling'.                    |
+
+
 
 ## SocketIO messages 📨
+
 | Event        | Message Type   | Details Type      | Details Msg                                    |
 |--------------|----------------|-------------------|------------------------------------------------|
 | `connect`    | `error`        | `invalid_credentials` | 'Invalid credentials'                      |
@@ -84,11 +72,7 @@ Please go to /logs/ to view the logs.
 |              | `error`        | `invalid_data`       | 'Invalid data'                                  |
 | `disconnect` | `room`         | `disconnected`       | E.g. "admin disconnected"                       |
 
-To get message in the frontend:
-
-- const messageType = message.type;
-- const detailsType = message.message.details.type;
-- const detailsMsg = message.message.details.msg;
+For documentation for SocketIO connection, please refer to the [Topmello documentation](https://topmello.github.io/docs/backend/tracker).
 
 
 """

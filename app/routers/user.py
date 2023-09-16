@@ -35,6 +35,21 @@ def verify(password: str, hashed_password: str):
 async def generate_username(
         request: Request,
         db: Session = Depends(get_db)):
+    """
+    Generate a unique username.
+
+    Args:
+    - None: This function does not take in any arguments.
+
+    Raises:
+    - None: This function does not explicitly raise any exceptions, but internal methods or dependencies might raise exceptions if any issues occur.
+
+    Returns:
+    - dict: A dictionary containing the generated username.
+
+    Note:
+    - The generated username using Transformer decoding architecture and is checked for uniqueness against the database.
+    """
 
     query = db.query(models.User.username)
     generated_name = generate_name(name_generator)
@@ -51,6 +66,22 @@ async def get_user(
         user_id: int,
         db: Session = Depends(get_db),
         current_user=Depends(oauth2.get_current_user)):
+    """
+    Retrieve a user by its ID, along with their latest prompts.
+
+    Args:
+    - user_id (int): The ID of the user to be fetched.
+    - Logged in required: The user must be logged in to retrieve their own details.
+
+    Raises:
+    - NotAuthorisedException: If the user_id does not match the current authenticated user.
+    - UserNotFoundException: If the user does not exist in the database.
+
+    Returns:
+    - schemas.UserOut: User details along with their latest ten prompts.
+
+
+    """
 
     # Check if user_id is the same as current_user
     if user_id != current_user.user_id:
@@ -79,6 +110,19 @@ async def create_user(
         request: Request,
         user: schemas.UserCreate,
         db: Session = Depends(get_db)):
+
+    """
+    Create a new user in the database.
+
+    Args:
+    - user (schemas.UserCreate): The user details to be created.
+
+    Raises:
+    - UserAlreadyExistsException: If the username already exists in the database.
+
+    Returns:
+    - models.User: The created user model.
+    """
 
     if db.query(models.User).filter(models.User.username == user.username).first():
         raise UserAlreadyExistsException()

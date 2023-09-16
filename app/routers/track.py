@@ -26,6 +26,21 @@ async def generate_room_pin(
         db: Session = Depends(get_db),
         current_user: schemas.User = Depends(oauth2.get_current_user),
         redis_room_db: aioredis.Redis = Depends(get_redis_room_db)):
+    """
+    Generate a unique room PIN and store it in Redis with an expiry.
+
+    Args:
+    - Logged in required: The user must be logged in to generate a room PIN.
+
+    Raises:
+    - None: This function does not explicitly raise any exceptions, but dependencies may raise exceptions if any issues occur.
+
+    Returns:
+    - schemas.TrackRoomOut: The generated room PIN.
+
+    Note:
+    - The generated room PIN is stored in Redis with 30 minutes expiry duration.
+    """
 
     room_id = str(random.randint(100000, 999999))
     await redis_room_db.setex(f"roomId:{room_id}", ROOM_EXPIRY_DURATION, 'active')
