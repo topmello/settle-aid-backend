@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 import aioredis
 from ..database import get_db
 from .. import models, schemas, oauth2
-from ..redis import redis_refresh_token_db_context, redis_room_db_context, redis_logs_db_context, log_to_redis
+from ..redis import redis_refresh_token_db_context, redis_room_db_context, redis_logs_db_context
+from ..loggings import log_to_redis
 
 import socketio
 from datetime import datetime, timedelta, timezone
