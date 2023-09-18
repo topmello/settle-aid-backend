@@ -112,6 +112,7 @@ async def login(
 
     return {
         "user_id": user_id,
+        "username": user_credentials.username,
         "access_token": access_token,
         "token_type": "bearer",
         "access_token_expire": access_token_expire,
@@ -169,6 +170,7 @@ async def refresh_token(
 
     return {
         "user_id": user_id,
+        "username": user.username,
         "access_token": access_token,
         "token_type": "bearer",
         "access_token_expire": access_token_expire,

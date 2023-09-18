@@ -84,6 +84,7 @@ class Token(BaseModel):
 
 class TokenV2(BaseModel):
     user_id: int
+    username: str
     access_token: str
     token_type: str
     access_token_expire: datetime
