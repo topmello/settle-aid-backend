@@ -162,6 +162,17 @@ def test_route_v2(test_client):
     )
     assert res.status_code == 400
 
+    res = test_client.delete(
+        f"/route/{route_id}/"
+    )
+    assert res.status_code == 401
+
+    res = test_client.delete(
+        f"/route/{route_id}/",
+        headers=headers
+    )
+    assert res.status_code == 204
+
 
 def test_vote(test_client):
     res = test_client.post(
@@ -193,21 +204,13 @@ def test_vote(test_client):
     time.sleep(2)
 
     res = test_client.post(
-        "/vote/",
-        headers=headers,
-        json={
-            "route_id": route_id,
-            "vote": True
-        })
+        f"/vote/{route_id}/",
+        headers=headers,)
     assert res.status_code == 201
 
     res = test_client.post(
-        "/vote/",
-        headers=headers,
-        json={
-            "route_id": route_id,
-            "vote": True
-        })
+        f"/vote/{route_id}/",
+        headers=headers,)
 
     assert res.status_code == 409
 
@@ -220,22 +223,14 @@ def test_vote(test_client):
     assert res.status_code == 200
     assert res.json()["num_votes"] == 1
 
-    res = test_client.post(
-        "/vote/",
-        headers=headers,
-        json={
-            "route_id": route_id,
-            "vote": False
-        })
+    res = test_client.delete(
+        f"/vote/{route_id}/",
+        headers=headers)
 
-    assert res.status_code == 201
+    assert res.status_code == 204
 
-    res = test_client.post(
-        "/vote/",
-        headers=headers,
-        json={
-            "route_id": route_id,
-            "vote": False
-        })
+    res = test_client.delete(
+        f"/vote/{route_id}/",
+        headers=headers)
 
     assert res.status_code == 404

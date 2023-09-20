@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy.orm import Session
 from sqlalchemy import func, case
 
@@ -7,7 +7,7 @@ from ..database import get_db
 from ..limiter import limiter
 
 
-from ..exceptions import UserNotFoundException, RouteNotFoundException, ParametersTooLargeException
+from ..exceptions import UserNotFoundException, RouteNotFoundException, ParametersTooLargeException, NotAuthorisedException
 
 router = APIRouter(
     prefix='/route',
@@ -70,16 +70,56 @@ async def get_route(
 
     result = route_query.first()
 
-    try:
-        route_obj, num_votes = result
-    except ValueError:
+    if result is None:
         raise RouteNotFoundException()
+
+    route_obj, num_votes = result
 
     route_vote_out = schemas.RouteVoteOut(
         route=route_db_to_pydantic(route_obj),
         num_votes=num_votes
     )
     return route_vote_out
+
+
+@router.delete('/{route_id}', status_code=204)
+@limiter.limit("1/second")
+async def delete_route(
+        request: Request,
+        route_id: int,
+        db: Session = Depends(get_db),
+        current_user: schemas.User = Depends(oauth2.get_current_user)):
+    """
+    Delete a route by its ID.
+
+    Args:
+    - route_id (int): The ID of the route to delete.
+
+    Raises:
+    - RouteNotFoundException: If no route is found with the specified ID.
+    - PermissionDeniedException: If the route does not belong to the current user.
+    """
+
+    route_query = db.query(models.Route).filter(
+        models.Route.route_id == route_id)
+    route_to_delete = route_query.first()
+
+    if not route_to_delete:
+        raise RouteNotFoundException()
+
+    # Check if the route belongs to the current user
+    if route_to_delete.created_by_user_id != current_user.user_id:
+        raise NotAuthorisedException()
+
+    # Delete associated votes
+    db.query(models.User_Route_Vote).filter(
+        models.User_Route_Vote.route_id == route_id).delete()
+
+    # Delete the route
+    route_query.delete()
+    db.commit()
+
+    return Response(status_code=204)
 
 
 @router.get('/user/{user_id}/', response_model=list[schemas.RouteVoteOutUser])

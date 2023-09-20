@@ -10,57 +10,84 @@ router = APIRouter(
 )
 
 
-@router.post("/", status_code=201)
-async def vote(
-        vote: schemas.VoteIn,
+@router.post("/{route_id}", status_code=201)
+async def add_vote(
+        route_id: int,
         db: Session = Depends(get_db),
         current_user: schemas.User = Depends(oauth2.get_current_user)
 ):
     """
-    Allow a user to vote or remove their vote for a specific route.
+    Allow a user to vote for a specific route.
 
     Args:
-    - vote (schemas.VoteIn): Details of the vote, including the route to vote for and the voting action (vote or un-vote) as boolean.
+    - vote (schemas.VoteIn): Details of the vote, including the route to vote for.
     - Logged in required: The user must be logged in to vote.
 
     Raises:
     - RouteNotFoundException: If no routes are found in the database.
-    - AlreadyVotedException: If the user has already voted for the specified route and is trying to vote again.
-    - VoteNotFoundException: If the user tries to remove a vote but hasn't voted for the specified route in the first place.
+    - AlreadyVotedException: If the user has already voted for the specified route.
 
     Returns:
-    - dict: A dictionary containing details of the voting action, including a type (if voted) and a message.
+    - dict: A dictionary containing details of the voting action, including a type and a message.
     """
 
     if db.query(func.count(models.Route.route_id)).scalar() == 0:
         raise RouteNotFoundException()
 
+    found_vote = db.query(models.User_Route_Vote).filter(
+        models.User_Route_Vote.user_id == current_user.user_id,
+        models.User_Route_Vote.route_id == route_id
+    ).first()
+
+    if found_vote:
+        raise AlreadyVotedException()
+
+    new_vote = models.User_Route_Vote(
+        user_id=current_user.user_id,
+        route_id=route_id
+    )
+    db.add(new_vote)
+    db.commit()
+
+    return {"detail": {
+        "type": "voted",
+        "message": "Route Favourited"
+    }}
+
+
+@router.delete("/{route_id}", status_code=204)
+async def delete_vote(
+        route_id: int,
+        db: Session = Depends(get_db),
+        current_user: schemas.User = Depends(oauth2.get_current_user)
+):
+    """
+    Allow a user to remove their vote for a specific route.
+
+    Args:
+    - vote (schemas.VoteIn): Details of the vote, including the route to un-vote for.
+    - Logged in required: The user must be logged in to un-vote.
+
+    Raises:
+    - VoteNotFoundException: If the user tries to remove a vote but hasn't voted for the specified route in the first place.
+
+    Returns:
+    - dict: A dictionary containing a message.
+    """
+
     vote_query = db.query(models.User_Route_Vote).filter(
         models.User_Route_Vote.user_id == current_user.user_id,
-        models.User_Route_Vote.route_id == vote.route_id
+        models.User_Route_Vote.route_id == route_id
     )
     found_vote = vote_query.first()
 
-    if vote.vote:
-        if found_vote:
-            raise AlreadyVotedException()
-        else:
-            new_vote = models.User_Route_Vote(
-                user_id=current_user.user_id,
-                route_id=vote.route_id
-            )
-            db.add(new_vote)
-            db.commit()
+    if not found_vote:
+        raise VoteNotFoundException()
 
-            return {"detail": {
-                "type": "voted",
-                "message": "Vote added"
-            }}
-    else:
-        if not found_vote:
-            raise VoteNotFoundException()
-        else:
-            vote_query.delete(synchronize_session=False)
-            db.commit()
+    vote_query.delete(synchronize_session=False)
+    db.commit()
 
-            return {"detail": "Vote removed"}
+    return {"detail": {
+        "type": "unvoted",
+        "message": "Route Unfavourited"
+    }}
