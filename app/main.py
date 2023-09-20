@@ -1,5 +1,5 @@
 
-from fastapi import FastAPI, Depends, HTTPException, status, Request
+from fastapi import FastAPI, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.openapi.utils import get_openapi
@@ -70,7 +70,7 @@ For documentation for SocketIO connection, please refer to the [Topmello documen
 app = FastAPI(
     title="Settle Aid 🚠",
     description=description,
-    version="0.1.0",
+    version="0.2.0",
     contact={
         "name": "Top Mello",
         "url": "https://topmello.github.io/"

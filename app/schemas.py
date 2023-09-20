@@ -70,6 +70,12 @@ class RouteVoteOut(BaseModel):
     num_votes: int
 
 
+class RouteVoteOutUser(BaseModel):
+    route: RouteOutV2
+    num_votes: int
+    voted_by_user: bool
+
+
 class UserOut(BaseModel):
     user_id: int
     username: str
