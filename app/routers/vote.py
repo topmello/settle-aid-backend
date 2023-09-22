@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy import func
 from sqlalchemy.orm import Session
+import aioredis
 from .. import schemas, models, oauth2
 from ..database import get_db
+from ..redis import get_redis_cache_db
 from ..exceptions import RouteNotFoundException, AlreadyVotedException, VoteNotFoundException
 router = APIRouter(
     prefix='/vote',
@@ -14,6 +16,7 @@ router = APIRouter(
 async def add_vote(
         route_id: int,
         db: Session = Depends(get_db),
+        r: aioredis.Redis = Depends(get_redis_cache_db),
         current_user: schemas.User = Depends(oauth2.get_current_user)
 ):
     """
@@ -49,6 +52,8 @@ async def add_vote(
     db.add(new_vote)
     db.commit()
 
+    await r.delete(f"route_voted:{route_id}")
+
     return {"detail": {
         "type": "voted",
         "message": "Route Favourited"
@@ -59,6 +64,7 @@ async def add_vote(
 async def delete_vote(
         route_id: int,
         db: Session = Depends(get_db),
+        r: aioredis.Redis = Depends(get_redis_cache_db),
         current_user: schemas.User = Depends(oauth2.get_current_user)
 ):
     """
@@ -86,6 +92,7 @@ async def delete_vote(
 
     vote_query.delete(synchronize_session=False)
     db.commit()
+    await r.delete(f"route_voted:{route_id}")
 
     return {"detail": {
         "type": "unvoted",

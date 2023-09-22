@@ -188,8 +188,6 @@ async def get_routes(
         else:
             not_cached_route_ids.append(route_ids[idx])
 
-    print(not_cached_route_ids)
-    print(len(routes_out_cached))
     routes = (
         db.query(
             models.Route,
@@ -216,7 +214,11 @@ async def get_routes(
         await r.set(f"route_voted:{route_obj.route_id}", route_vote_out.json(), ex=60)
         routes_out_fresh.append(route_vote_out)
 
-    return routes_out_fresh + routes_out_cached
+    combined_routes = routes_out_fresh + routes_out_cached
+    sorted_routes = sorted(
+        combined_routes, key=lambda x: x.route.route_id, reverse=True)
+
+    return sorted_routes
 
 
 @router.get('/user/fav/{user_id}/', response_model=list[schemas.RouteVoteOutUser])
@@ -306,7 +308,7 @@ async def get_routes(
         routes_out_fresh.append(route_vote_out)
 
     combined_routes = routes_out_fresh + routes_out_cached
-    orted_routes = sorted(
+    sorted_routes = sorted(
         combined_routes, key=lambda x: x.route.route_id, reverse=True)
 
-    return orted_routes
+    return sorted_routes
