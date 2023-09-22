@@ -5,11 +5,13 @@ from sqlalchemy import select, desc, func, text
 from sqlalchemy.orm import Session
 from geoalchemy2 import WKTElement
 
+
 import numpy as np
 
 from sentence_transformers import SentenceTransformer
 
 from ..database import get_db
+
 
 from ..mapbox import get_route
 
