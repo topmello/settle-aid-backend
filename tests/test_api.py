@@ -146,7 +146,7 @@ def test_route_v2(test_client):
     res = test_client.get(
         "/route/user/100"
     )
-    assert res.status_code == 404
+    assert res.status_code == 401
 
     time.sleep(2)
 

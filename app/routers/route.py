@@ -394,7 +394,26 @@ async def publish_route(
         r: aioredis.Redis = Depends(get_redis_feed_db),
         current_user: schemas.User = Depends(oauth2.get_current_user)):
     """
-    Publish a route to the feed.
+    Publish a specified route to the public feed.
+
+    This endpoint allows users to make their route publicly available on the feed.
+    It first checks if the specified route exists in the database and if the 
+    authenticated user is the author of that route. After these validations, the route 
+    is published to the Redis feed.
+
+    Parameters:
+    - request (Request): The request object.
+    - route_id (int): The unique identifier of the route to be published.
+    - db (Session): The database session, injected by FastAPI.
+    - r (aioredis.Redis): The Redis instance for feeds, injected by FastAPI.
+    - current_user (schemas.User): The current authenticated user, injected by FastAPI.
+
+    Returns:
+    - dict: A dictionary containing details about the publishing status.
+
+    Raises:
+    - RouteNotFoundException: If the specified route does not exist in the database.
+    - NotAuthorisedException: If the authenticated user is not the author of the specified route.
     """
     # Check if route exists
     if db.query(models.Route).filter(models.Route.route_id == route_id).first() is None:
@@ -425,8 +444,30 @@ async def get_top_routes(
         db: Session = Depends(get_db),
         current_user: schemas.User = Depends(oauth2.get_current_user)):
     """
-    Get top routes sorted by votes.
+    Get top routes based on the provided criteria and order.
+
+    This endpoint returns the top routes either by creation date or votes, 
+    depending on the order_by parameter. Before fetching, it cleans up expired routes. 
+    It first fetches the route IDs from Redis, followed by a detailed query on the 
+    database for more information on each route, including the number of votes and 
+    whether the current user has voted on it.
+
+    Parameters:
+    - request (Request): The request object.
+    - order_by (str, optional): The ordering criterion. Can be either 'created_at' or 'num_votes'. Defaults to 'num_votes'.
+    - limit (int, optional): The maximum number of routes to return. Defaults to 10.
+    - offset (int, optional): The offset for pagination. Defaults to 0.
+    - r (aioredis.Redis): The Redis instance for feeds, injected by FastAPI.
+    - db (Session): The database session, injected by FastAPI.
+    - current_user (schemas.User): The current authenticated user, injected by FastAPI.
+
+    Returns:
+    - list[schemas.RouteVoteOutUser]: A list of top routes with their associated vote details.
+
+    Raises:
+    - InvalidSearchQueryException: If the order_by parameter is not in the allowed options.
     """
+
     # First, clean up expired routes
     await cleanup_expired_routes(r)
 
