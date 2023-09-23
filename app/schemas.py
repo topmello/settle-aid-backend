@@ -1,5 +1,6 @@
 from pydantic import BaseModel, ValidationError, field_validator, constr, root_validator
 from datetime import datetime
+from .models import Route
 
 
 class UserCreate(BaseModel):
@@ -63,6 +64,30 @@ class RouteOutV2(BaseModel):
     route: list[dict[str, float]]
     instructions: list[str]
     duration: float
+    created_at: datetime
+
+    @classmethod
+    def from_orm(cls, route: Route) -> "RouteOutV2":
+        # Convert latitudes and longitudes to list of dictionaries
+        locations_coordinates = [
+            {"latitude": lat, "longitude": lon}
+            for lat, lon in zip(route.location_latitudes, route.location_longitudes)
+        ]
+
+        route_coordinates = [
+            {"latitude": lat, "longitude": lon}
+            for lat, lon in zip(route.route_latitudes, route.route_longitudes)
+        ]
+
+        return cls(
+            route_id=route.route_id,
+            locations=route.locations,
+            locations_coordinates=locations_coordinates,
+            route=route_coordinates,
+            instructions=route.instructions,
+            duration=route.duration,
+            created_at=route.created_at,
+        )
 
 
 class RouteVoteOut(BaseModel):

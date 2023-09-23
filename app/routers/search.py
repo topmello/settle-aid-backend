@@ -329,13 +329,6 @@ async def search_by_query_seq_v2(
     db.commit()
     db.refresh(insert_route)
 
-    out = schemas.RouteOutV2(
-        route_id=insert_route.route_id,
-        locations=location_names,
-        locations_coordinates=coordinates,
-        route=route_coordinates,
-        instructions=instructions,
-        duration=duration
-    )
+    out = schemas.RouteOutV2.from_orm(insert_route)
 
     return out

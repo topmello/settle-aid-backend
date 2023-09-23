@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 import aioredis
 from .. import schemas, models, oauth2
 from ..database import get_db
-from ..redis import get_redis_cache_db
+from ..redis import get_redis_feed_db, async_retry
 from ..exceptions import RouteNotFoundException, AlreadyVotedException, VoteNotFoundException
 router = APIRouter(
     prefix='/vote',
@@ -12,11 +12,21 @@ router = APIRouter(
 )
 
 
+@async_retry()
+async def increment_route_votes_in_redis(route_id: int, r: aioredis.Redis):
+    await r.zincrby('routes_leaderboard', 1, route_id)
+
+
+@async_retry()
+async def decrement_route_votes_in_redis(route_id: int, r: aioredis.Redis):
+    await r.zincrby('routes_leaderboard', -1, route_id)
+
+
 @router.post("/{route_id}", status_code=201)
 async def add_vote(
         route_id: int,
         db: Session = Depends(get_db),
-        r: aioredis.Redis = Depends(get_redis_cache_db),
+        r: aioredis.Redis = Depends(get_redis_feed_db),
         current_user: schemas.User = Depends(oauth2.get_current_user)
 ):
     """
@@ -52,7 +62,7 @@ async def add_vote(
     db.add(new_vote)
     db.commit()
 
-    await r.delete(f"route_voted:{route_id}")
+    await increment_route_votes_in_redis(route_id, r)
 
     return {"detail": {
         "type": "voted",
@@ -64,7 +74,7 @@ async def add_vote(
 async def delete_vote(
         route_id: int,
         db: Session = Depends(get_db),
-        r: aioredis.Redis = Depends(get_redis_cache_db),
+        r: aioredis.Redis = Depends(get_redis_feed_db),
         current_user: schemas.User = Depends(oauth2.get_current_user)
 ):
     """
@@ -92,7 +102,8 @@ async def delete_vote(
 
     vote_query.delete(synchronize_session=False)
     db.commit()
-    await r.delete(f"route_voted:{route_id}")
+
+    await decrement_route_votes_in_redis(route_id, r)
 
     return {"detail": {
         "type": "unvoted",
