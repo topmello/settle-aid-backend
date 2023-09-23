@@ -22,7 +22,7 @@ async def decrement_route_votes_in_redis(route_id: int, r: aioredis.Redis):
     await r.zincrby('routes_leaderboard', -1, route_id)
 
 
-@router.post("/{route_id}", status_code=201)
+@router.post("/{route_id}/", status_code=201)
 async def add_vote(
         route_id: int,
         db: Session = Depends(get_db),
@@ -44,7 +44,7 @@ async def add_vote(
     - dict: A dictionary containing details of the voting action, including a type and a message.
     """
 
-    if db.query(func.count(models.Route.route_id)).scalar() == 0:
+    if db.query(models.Route).filter(models.Route.route_id == route_id).first() is None:
         raise RouteNotFoundException()
 
     found_vote = db.query(models.User_Route_Vote).filter(
@@ -70,7 +70,7 @@ async def add_vote(
     }}
 
 
-@router.delete("/{route_id}", status_code=204)
+@router.delete("/{route_id}/", status_code=204)
 async def delete_vote(
         route_id: int,
         db: Session = Depends(get_db),
@@ -90,6 +90,8 @@ async def delete_vote(
     Returns:
     - dict: A dictionary containing a message.
     """
+    if db.query(models.Route).filter(models.Route.route_id == route_id).first() is None:
+        raise RouteNotFoundException()
 
     vote_query = db.query(models.User_Route_Vote).filter(
         models.User_Route_Vote.user_id == current_user.user_id,

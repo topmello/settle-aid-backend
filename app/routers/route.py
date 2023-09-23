@@ -38,6 +38,8 @@ async def get_route_from_redis_or_db(route_id, r: aioredis.Redis, db: Session) -
         # If not found in Redis, fetch from the DB
         route_obj = db.query(models.Route).filter(
             models.Route.route_id == route_id).first()
+        if route_obj is None:
+            return None
         route_obj = schemas.RouteOutV2.from_orm(route_obj)
 
         # Store in Redis for future use
@@ -95,6 +97,8 @@ async def get_route(
     """
 
     route_obj = await get_route_from_redis_or_db(route_id, r, db)
+
+    print(route_obj)
 
     if not route_obj:
         raise RouteNotFoundException()

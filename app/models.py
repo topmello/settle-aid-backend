@@ -59,9 +59,9 @@ class Route(Base):
 class User_Route_Vote(Base):
     __tablename__ = "user_route_votes"
 
-    user_id = Column(Integer, ForeignKey("users.user_id"),
+    user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"),
                      nullable=False, primary_key=True)
-    route_id = Column(Integer, ForeignKey("routes.route_id"),
+    route_id = Column(Integer, ForeignKey("routes.route_id", ondelete="CASCADE"),
                       nullable=False, primary_key=True)
     created_at = Column(TIMESTAMP(timezone=True),
                         server_default=text("now()"), nullable=False)

@@ -13,6 +13,7 @@ services:
       - POSTGRES_PASSWORD=password1234
     volumes:
       - database_volume:/var/lib/postgresql/data/
+      - dbbackups_volume:/backups
 
   redis:
     container_name: redis
@@ -60,7 +61,31 @@ services:
       - db
       - redis
 
+  pgbackups:
+    container_name: db-backup
+    image: prodrigestivill/postgres-backup-local
+    restart: always
+    user: postgres:postgres
+    volumes:
+      - dbbackups_volume:/backups
+    links:
+      - db
+    depends_on:
+      - db
+    environment:
+      - POSTGRES_HOST=db
+      - POSTGRES_DB=database
+      - POSTGRES_USER=db_user
+      - POSTGRES_PASSWORD=password1234
+      - POSTGRES_EXTRA_OPTS=-Z6 --schema=public --blobs
+      - SCHEDULE=@daily
+      - BACKUP_KEEP_DAYS=7
+      - BACKUP_KEEP_WEEKS=4
+      - BACKUP_KEEP_MONTHS=6
+      - HEALTHCHECK_PORT=8080
+
 volumes:
   database_volume:
   redis_volume:
   models_volume:
+  dbbackups_volume:
