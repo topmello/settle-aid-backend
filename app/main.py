@@ -8,7 +8,7 @@ import aioredis
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
-from .routers import auth, user, search, translate, track_sio, track, vote, route
+from .routers import auth, user, search, translate, track_sio, track, vote, route, challange
 from .limiter import limiter
 
 from fastapi.exceptions import RequestValidationError
@@ -98,6 +98,7 @@ app.include_router(search.router)
 app.include_router(translate.router)
 app.include_router(vote.router)
 app.include_router(route.router)
+app.include_router(challange.router)
 app.include_router(track.router)
 app.mount("/track-sio", track_sio.subapi)
 

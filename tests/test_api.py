@@ -120,6 +120,8 @@ def test_route_v2(test_client):
     token = res.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
 
+    user_id = res.json()["user_id"]
+
     time.sleep(2)
 
     res = test_client.post(
@@ -144,21 +146,24 @@ def test_route_v2(test_client):
     time.sleep(2)
 
     res = test_client.get(
-        "/route/user/100"
+        f"/route/user/{user_id+1}",
+        headers=headers
     )
-    assert res.status_code == 401
+    assert res.status_code == 403
 
     time.sleep(2)
 
     res = test_client.get(
-        f"/route/user/1"
+        f"/route/user/{user_id}",
+        headers=headers
     )
     assert res.status_code == 200
 
     time.sleep(2)
 
     res = test_client.get(
-        f"/route/user/1/?limit=1000"
+        f"/route/user/{user_id}/?limit=1000",
+        headers=headers
     )
     assert res.status_code == 400
 

@@ -231,11 +231,11 @@ async def get_routes(
         r: aioredis.Redis = Depends(get_redis_feed_db),
         current_user: schemas.User = Depends(oauth2.get_current_user)):
     """
-    Retrieve a list of routes created by a specified user.
+    Retrieve a list of favorite routes created by a specified user.
 
     Args:
-    - user_id (int): The ID of the user whose routes are to be retrieved.
-    - limit (int): The maximum number of routes to retrieve. Defaults to 10.
+    - user_id (int): The ID of the user whose favorite routes are to be retrieved.
+    - limit (int): The maximum number of favorite routes to retrieve. Defaults to 10.
 
     Raises:
     - ParametersTooLargeException: If the limit specified exceeds 50.
@@ -243,7 +243,7 @@ async def get_routes(
     - RouteNotFoundException: If no routes are found.
 
     Returns:
-    - List[schemas.RouteVoteOut]: A list of routes and their respective vote counts.
+    - List[schemas.RouteVoteOut]: A list of favorite routes and their respective vote counts.
     """
 
     if current_user.user_id != user_id:
@@ -302,11 +302,11 @@ async def get_routes(
         r: aioredis.Redis = Depends(get_redis_feed_db),
         current_user: schemas.User = Depends(oauth2.get_current_user)):
     """
-    Retrieve a list of routes created by a specified user.
+    Retrieve a list of routes favorited by a specified user.
 
     Args:
-    - user_id (int): The ID of the user whose routes are to be retrieved.
-    - limit (int): The maximum number of routes to retrieve. Defaults to 10.
+    - user_id (int): The ID of the user whose favorite routes are to be retrieved.
+    - limit (int): The maximum number of favorite routes to retrieve. Defaults to 10.
 
     Raises:
     - ParametersTooLargeException: If the limit specified exceeds 50.
@@ -314,7 +314,7 @@ async def get_routes(
     - RouteNotFoundException: If no routes are found.
 
     Returns:
-    - List[schemas.RouteVoteOut]: A list of routes and their respective vote counts.
+    - List[schemas.RouteVoteOut]: A list of favorite routes and their respective vote counts.
     """
 
     if current_user.user_id != user_id:
