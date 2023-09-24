@@ -11,6 +11,8 @@ from ..database import get_db
 from ..redis import get_redis_feed_db, async_retry
 from ..limiter import limiter
 
+from ..common import templates
+
 
 from ..exceptions import UserNotFoundException, RouteNotFoundException, ParametersTooLargeException, NotAuthorisedException, InvalidSearchQueryException
 
@@ -98,8 +100,6 @@ async def get_route(
 
     route_obj = await get_route_from_redis_or_db(route_id, r, db)
 
-    print(route_obj)
-
     if not route_obj:
         raise RouteNotFoundException()
 
@@ -161,6 +161,7 @@ async def delete_route(
 @limiter.limit("5/second")
 async def get_routes(
         request: Request, user_id: int,
+        offset: int = 0,
         limit: int = 10,
         db: Session = Depends(get_db),
         r: aioredis.Redis = Depends(get_redis_feed_db),
@@ -194,6 +195,7 @@ async def get_routes(
         db.query(models.Route.route_id)
         .filter(models.Route.created_by_user_id == user_id)
         .order_by(models.Route.created_at.desc())
+        .offset(offset)
         .limit(limit)
         .all()
     )
@@ -230,6 +232,7 @@ async def get_routes(
 @limiter.limit("5/second")
 async def get_routes(
         request: Request, user_id: int,
+        offset: int = 0,
         limit: int = 10,
         db: Session = Depends(get_db),
         r: aioredis.Redis = Depends(get_redis_feed_db),
@@ -265,6 +268,7 @@ async def get_routes(
         .join(models.Route, models.Route.route_id == models.User_Route_Vote.route_id)
         .filter(models.Route.created_by_user_id == user_id)
         .order_by(models.Route.created_at.desc())
+        .offset(offset)
         .limit(limit)
         .all()
     )
@@ -301,6 +305,7 @@ async def get_routes(
 @limiter.limit("5/second")
 async def get_routes(
         request: Request, user_id: int,
+        offset: int = 0,
         limit: int = 10,
         db: Session = Depends(get_db),
         r: aioredis.Redis = Depends(get_redis_feed_db),
@@ -335,6 +340,7 @@ async def get_routes(
         .filter(models.User_Route_Vote.user_id == user_id)
         .join(models.Route, models.Route.route_id == models.User_Route_Vote.route_id)
         .order_by(models.Route.created_at.desc())
+        .offset(offset)
         .limit(limit)
         .all()
     )
@@ -438,41 +444,8 @@ async def publish_route(
     }}
 
 
-@router.get("/feed/top_routes", response_model=list[schemas.RouteVoteOutUser])
-async def get_top_routes(
-        request: Request,
-        order_by: str = 'num_votes',
-        limit: int = 10,
-        offset: int = 0,
-        r: aioredis.Redis = Depends(get_redis_feed_db),
-        db: Session = Depends(get_db),
-        current_user: schemas.User = Depends(oauth2.get_current_user)):
-    """
-    Get top routes based on the provided criteria and order.
+async def fetch_top_routes(order_by: str, offset: int, limit: int, r: aioredis.Redis, db: Session, current_user: schemas.User):
 
-    This endpoint returns the top routes either by creation date or votes, 
-    depending on the order_by parameter. Before fetching, it cleans up expired routes. 
-    It first fetches the route IDs from Redis, followed by a detailed query on the 
-    database for more information on each route, including the number of votes and 
-    whether the current user has voted on it.
-
-    Parameters:
-    - request (Request): The request object.
-    - order_by (str, optional): The ordering criterion. Can be either 'created_at' or 'num_votes'. Defaults to 'num_votes'.
-    - limit (int, optional): The maximum number of routes to return. Defaults to 10.
-    - offset (int, optional): The offset for pagination. Defaults to 0.
-    - r (aioredis.Redis): The Redis instance for feeds, injected by FastAPI.
-    - db (Session): The database session, injected by FastAPI.
-    - current_user (schemas.User): The current authenticated user, injected by FastAPI.
-
-    Returns:
-    - list[schemas.RouteVoteOutUser]: A list of top routes with their associated vote details.
-
-    Raises:
-    - InvalidSearchQueryException: If the order_by parameter is not in the allowed options.
-    """
-
-    # First, clean up expired routes
     await cleanup_expired_routes(r)
 
     order_by_options = ['created_at', 'num_votes']
@@ -502,3 +475,40 @@ async def get_top_routes(
         route_objects=route_objects, vote_details=vote_details)
 
     return routes_out
+
+
+@router.get("/feed/top_routes", response_model=list[schemas.RouteVoteOutUser])
+async def get_top_routes(
+        request: Request,
+        order_by: str = 'num_votes',
+        offset: int = 0,
+        limit: int = 10,
+        r: aioredis.Redis = Depends(get_redis_feed_db),
+        db: Session = Depends(get_db),
+        current_user: schemas.User = Depends(oauth2.get_current_user)):
+    """
+    Get top routes based on the provided criteria and order.
+
+    This endpoint returns the top routes either by creation date or votes, 
+    depending on the order_by parameter. Before fetching, it cleans up expired routes. 
+    It first fetches the route IDs from Redis, followed by a detailed query on the 
+    database for more information on each route, including the number of votes and 
+    whether the current user has voted on it.
+
+    Parameters:
+    - request (Request): The request object.
+    - order_by (str, optional): The ordering criterion. Can be either 'created_at' or 'num_votes'. Defaults to 'num_votes'.
+    - limit (int, optional): The maximum number of routes to return. Defaults to 10.
+    - offset (int, optional): The offset for pagination. Defaults to 0.
+    - r (aioredis.Redis): The Redis instance for feeds, injected by FastAPI.
+    - db (Session): The database session, injected by FastAPI.
+    - current_user (schemas.User): The current authenticated user, injected by FastAPI.
+
+    Returns:
+    - list[schemas.RouteVoteOutUser]: A list of top routes with their associated vote details.
+
+    Raises:
+    - InvalidSearchQueryException: If the order_by parameter is not in the allowed options.
+    """
+
+    return await fetch_top_routes(order_by, offset, limit, r, db, current_user)

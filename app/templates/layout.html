@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Settle-Aid</title>
+    <script src="https://unpkg.com/htmx.org@1.6.1"></script>
+    <script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.16/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <header>
+      <h1>Settle-Aid</h1>
+    </header>
+
+    <nav>
+      <!-- This is where you could have main navigation links, if any -->
+
+      <button
+        hx-get="/ui/login/"
+        hx-swap="innerHTML"
+        hx-target="#loginContainer"
+      >
+        Login
+      </button>
+      <button
+        hx-get="/ui/feed/"
+        hx-swap="innerHTML"
+        hx-target="#routesContainer"
+      >
+        Load Routes
+      </button>
+    </nav>
+
+    <main id="mainContent">
+      <div id="loginContainer"></div>
+      <div id="routesContainer">
+        <!-- Routes will be loaded here -->
+      </div>
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer></footer>
+  </body>
+</html>

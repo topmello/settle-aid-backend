@@ -19,11 +19,18 @@ class CustomOAuth2PasswordBearer(OAuth2PasswordBearer):
         super().__init__(tokenUrl, **kwargs)
 
     async def __call__(self, request: Request):
-        token = request.headers.get(
-            "Authorization", "").split("Bearer ")[-1].strip()
-        if not token:
-            raise InvalidCredentialsException()
-        return token
+
+        authorization: str = request.headers.get("Authorization", "")
+        cookie_token: str = request.cookies.get("access_token", "")
+
+        if authorization and authorization.startswith("Bearer"):
+            token = authorization.split("Bearer ")[-1].strip()
+            if not token:
+                raise InvalidCredentialsException()
+            return token
+
+        if cookie_token:
+            return cookie_token
 
 
 oauth2_scheme = CustomOAuth2PasswordBearer(tokenUrl="login")
@@ -108,8 +115,22 @@ async def get_current_user(
         r: aioredis.Redis = Depends(get_redis_refresh_token_db)):
 
     token_data = await verify_access_token(token)
-
     user = await get_user(token_data.username, db, r)
+
+    return user
+
+
+async def get_current_user_optional(
+        request: Request,
+        token: str = Depends(oauth2_scheme),
+        db: Session = Depends(get_db),
+        r: aioredis.Redis = Depends(get_redis_refresh_token_db)):
+
+    try:
+        token_data = await verify_access_token(token)
+        user = await get_user(token_data.username, db, r)
+    except InvalidCredentialsException:
+        user = None
 
     return user
 

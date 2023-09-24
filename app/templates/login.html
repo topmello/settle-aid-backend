@@ -1,0 +1,64 @@
+<div id="loginContainer" class="bg-gray-100 min-h-screen flex flex-col p-8">
+  <div class="flex justify-between items-center mb-12">
+    <button class="text-gray-600">
+      <!-- You can use an SVG for the arrow back icon here -->
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-6 w-6"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M15 19l-7-7 7-7"
+        />
+      </svg>
+    </button>
+    <div class="text-gray-600">👋</div>
+  </div>
+  <h1 class="text-3xl text-gray-700 font-bold mb-4">Welcome back,</h1>
+  <h2 class="text-2xl text-gray-700 mb-8">Let's Sign in</h2>
+  <form id="loginForm" class="space-y-4">
+    <div>
+      <label for="username" class="sr-only">Username</label>
+      <input
+        type="text"
+        id="username"
+        name="username"
+        placeholder="Username"
+        class="w-full p-3 border border-gray-300 rounded"
+      />
+    </div>
+    <div>
+      <label for="password" class="sr-only">Password</label>
+      <input
+        type="password"
+        id="password"
+        name="password"
+        placeholder="Password"
+        class="w-full p-3 border border-gray-300 rounded"
+      />
+    </div>
+    <div class="flex flex-col items-center space-y-4">
+      <button type="button" class="text-blue-500">
+        I don't have an account
+      </button>
+      <button
+        type="button"
+        class="bg-blue-500 text-white py-2 px-6 rounded"
+        hx-post="/login/v2/"
+        hx-vars="username:username.value, password:password.value"
+        hx-content-type="application/json"
+        hx-ext="json-enc"
+        hx-headers='{"X-Client-Type": "web-ui"}'
+        hx-swap="outerHTML with ''"
+        hx-target="#loginContainer"
+      >
+        Log in
+      </button>
+    </div>
+  </form>
+</div>

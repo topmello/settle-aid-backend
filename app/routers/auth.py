@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, Response
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from jose import jwt
@@ -6,6 +6,7 @@ import json
 import aioredis
 import asyncio
 
+from ..common import templates
 from ..database import get_db
 from ..redis import get_redis_refresh_token_db
 from ..config import settings
@@ -14,6 +15,7 @@ from ..limiter import limiter
 from .. import models, schemas, oauth2
 from .user import verify
 from ..exceptions import InvalidCredentialsException, UserNotFoundException, InvalidRefreshTokenException
+
 
 router = APIRouter(
     prefix="/login",
@@ -57,27 +59,12 @@ async def login(
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@router.post('/v2/', response_model=schemas.TokenV2)
-@limiter.limit("5/second")
-async def login(
+async def login_(
         request: Request,
         user_credentials: schemas.LoginRequest,
-        db: Session = Depends(get_db),
-        r: aioredis.Redis = Depends(get_redis_refresh_token_db)):
-    """
-    Authenticate a user and return an enhanced access token (v2).
-
-    Args:
-    - user_credentials (schemas.LoginRequest): Contains the user's username and password.
-
-    Raises:
-    - UserNotFoundException: If the specified user does not exist.
-    - InvalidCredentialsException: If the password verification fails.
-
-    Returns:
-    - dict: JWT token, refresh token, token type, and respective expiries.
-    """
-
+        db: Session,
+        r: aioredis.Redis
+) -> schemas.TokenV2:
     user = await oauth2.get_user(user_credentials.username, db, r)
 
     if not user:
@@ -110,15 +97,59 @@ async def login(
     await r.setex(f"refresh_token:{user_id}", int(
         ttl), json.dumps(token_data))
 
-    return {
-        "user_id": user_id,
-        "username": user_credentials.username,
-        "access_token": access_token,
-        "token_type": "bearer",
-        "access_token_expire": access_token_expire,
-        "refresh_token": refresh_token,
-        "refresh_token_expire": refresh_token_expiry
-    }
+    user_logged_in = schemas.TokenV2(
+        user_id=user_id,
+        username=user_credentials.username,
+        access_token=access_token,
+        token_type="bearer",
+        access_token_expire=access_token_expire,
+        refresh_token=refresh_token,
+        refresh_token_expire=refresh_token_expiry
+    )
+    return user_logged_in
+
+
+@router.post('/v2/', response_model=schemas.TokenV2)
+@limiter.limit("5/second")
+async def login(
+        request: Request,
+        user_credentials: schemas.LoginRequest,
+        db: Session = Depends(get_db),
+        r: aioredis.Redis = Depends(get_redis_refresh_token_db)):
+    """
+    Authenticate a user and return an enhanced access token (v2).
+
+    Args:
+    - user_credentials (schemas.LoginRequest): Contains the user's username and password.
+
+    Raises:
+    - UserNotFoundException: If the specified user does not exist.
+    - InvalidCredentialsException: If the password verification fails.
+
+    Returns:
+    - dict: JWT token, refresh token, token type, and respective expiries.
+    """
+
+    user_logged_in = await login_(request, user_credentials, db, r)
+
+    # Check for a custom header from the web UI
+    is_web_ui = request.headers.get("X-Client-Type") == "web-ui"
+
+    if is_web_ui:
+        return templates.TemplateResponse("welcome.html", {"request": request, "username": user_logged_in.username})
+        # If it's a web UI request, set the JWT as a cookie
+        response = Response(content=response_content, media_type="text/html")
+        response.set_cookie(
+            key="access_token",
+            value=user_logged_in.access_token,
+            httponly=True,
+            max_age=3600,
+            samesite="lax",
+            secure=True
+        )
+        return response
+    else:
+        return user_logged_in
 
 
 @router.post('/v2/refresh/', response_model=schemas.TokenV2)

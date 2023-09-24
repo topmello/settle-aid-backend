@@ -1,0 +1,38 @@
+<div id="newRoutes" class="flex flex-col items-center">
+  {% for route in routes %}
+  <div
+    class="bg-gray-100 p-4 m-2 rounded-lg w-full max-w-md text-center shadow-lg"
+  >
+    <h2 class="text-xl font-bold text-blue-500">{{ route.route.route_id }}</h2>
+    <!-- Other route details -->
+    <div class="mt-2 text-blue-500">
+      <!-- Tags go here -->
+      {% for location in route.route.locations %}
+      <span
+        class="inline-block bg-blue-200 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2"
+      >
+        #{{ location }}
+      </span>
+      {% endfor %}
+    </div>
+    <div class="mt-4 flex justify-end space-x-2">
+      <!-- Buttons go here -->
+      <button class="border border-blue-500 text-blue-500 rounded px-4 py-2">
+        Schedule
+      </button>
+      <button class="border border-blue-500 text-blue-500 rounded px-4 py-2">
+        Share
+      </button>
+    </div>
+  </div>
+  {% endfor %}
+  <div
+    id="loadingMore"
+    hx-get="/ui/feed/top_routes?offset={{ next_offset }}"
+    hx-trigger="revealed"
+    hx-swap="outerHTML with #newRoutes"
+    class="p-4 m-2 text-center"
+  >
+    Loading more routes...
+  </div>
+</div>
