@@ -78,6 +78,30 @@ def merge_route_details(
     return merged_results
 
 
+async def get_route_(
+        route_id: int,
+        db: Session,
+        r: aioredis.Redis,
+):
+    route_obj = await get_route_from_redis_or_db(route_id, r, db)
+
+    if not route_obj:
+        raise RouteNotFoundException()
+
+    num_votes = (
+        db.query(func.count(models.User_Route_Vote.route_id))
+        .filter(models.User_Route_Vote.route_id == route_id)
+        .scalar()
+    )
+
+    route_vote_out = schemas.RouteVoteOut(
+        route=route_obj,
+        num_votes=num_votes
+    )
+
+    return route_vote_out
+
+
 @router.get('/{route_id}', response_model=schemas.RouteVoteOut)
 @limiter.limit("1/second")
 async def get_route(
@@ -98,23 +122,7 @@ async def get_route(
     - schemas.RouteVoteOut: The route details and the number of votes.
     """
 
-    route_obj = await get_route_from_redis_or_db(route_id, r, db)
-
-    if not route_obj:
-        raise RouteNotFoundException()
-
-    num_votes = (
-        db.query(func.count(models.User_Route_Vote.route_id))
-        .filter(models.User_Route_Vote.route_id == route_id)
-        .scalar()
-    )
-
-    route_vote_out = schemas.RouteVoteOut(
-        route=route_obj,
-        num_votes=num_votes
-    )
-
-    return route_vote_out
+    return await get_route_(route_id, db, r)
 
 
 @router.delete('/{route_id}', status_code=204)
@@ -209,9 +217,6 @@ async def get_routes_(
 
     else:
         raise InvalidSearchQueryException()
-
-    if not route_ids:
-        raise RouteNotFoundException()
 
     route_ids = [route_id[0] for route_id in route_ids]
 

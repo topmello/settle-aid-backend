@@ -1,11 +1,14 @@
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import HTMLResponse
+
 
 from sqlalchemy import select, desc, func, text
 from sqlalchemy.orm import Session
 from geoalchemy2 import WKTElement
 
-
+from fastapi.responses import HTMLResponse
+import folium
+import tempfile
+from pathlib import Path
 import numpy as np
 
 from sentence_transformers import SentenceTransformer
@@ -180,13 +183,10 @@ async def search_by_query_seq(
     return out
 
 
-@router.post("/v2/route/", response_model=schemas.RouteOutV2)
-@limiter.limit("1/second")
-async def search_by_query_seq_v2(
-        request: Request,
+async def search_by_query_seq_v2_(
         querys: schemas.RouteQueryV2,
-        db: Session = Depends(get_db),
-        current_user: schemas.User = Depends(oauth2.get_current_user)):
+        db: Session,
+        current_user: schemas.User):
     """
     Search for a route based on user queries, negative queries, and the current location (Version 2).
 
@@ -332,3 +332,30 @@ async def search_by_query_seq_v2(
     out = schemas.RouteOutV2.from_orm(insert_route)
 
     return out
+
+
+@router.post("/v2/route/", response_model=schemas.RouteOutV2)
+@limiter.limit("1/second")
+async def search_by_query_seq_v2(
+        request: Request,
+        querys: schemas.RouteQueryV2,
+        db: Session = Depends(get_db),
+        current_user: schemas.User = Depends(oauth2.get_current_user)):
+    """
+    Search for a route based on user queries, negative queries, and the current location (Version 2).
+
+    This endpoint allows users to provide negative queries to exclude certain results.
+
+    Args:
+    - querys (schemas.RouteQueryV2): The user query data including location type, latitude, longitude, distance threshold, similarity threshold, negative query, negative similarity threshold, and route type.
+    - Logged in required: The user must be logged in to search for a route.
+
+    Raises:
+    - LocationNotFoundException: If no matching location is found for a given query.
+    - InvalidSearchQueryException: If the provided queries are inconsistent in length or type.
+
+    Returns:
+    - schemas.RouteOutV2: The resulting route including route ID, locations, route coordinates, instructions, and duration.
+    """
+
+    return await search_by_query_seq_v2_(querys, db, current_user)

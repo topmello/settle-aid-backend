@@ -17,11 +17,14 @@
     </div>
     <div class="mt-4 flex justify-end space-x-2">
       <!-- Buttons go here -->
-      <button class="border border-blue-500 text-blue-500 rounded px-4 py-2">
-        Schedule
-      </button>
-      <button class="border border-blue-500 text-blue-500 rounded px-4 py-2">
-        Share
+      <button
+        class="border border-blue-500 text-blue-500 rounded px-4 py-2"
+        hx-get="/ui/route/map/{{ route.route.route_id }}/"
+        hx-trigger="click"
+        hx-target="#mapContainer"
+        hx-swap="innerHTML"
+      >
+        View Route
       </button>
     </div>
   </div>
@@ -31,6 +34,7 @@
     hx-get="/ui/feed/top_routes?offset={{ next_offset }}"
     hx-trigger="revealed"
     hx-swap="outerHTML with #newRoutes"
+    hx-vars="query_type:currentQueryType"
     class="p-4 m-2 text-center"
   >
     Loading more routes...

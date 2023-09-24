@@ -6,9 +6,21 @@
     <title>Settle-Aid</title>
     <script src="https://unpkg.com/htmx.org@1.6.1"></script>
     <script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
     <link
       href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.16/dist/tailwind.min.css"
       rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"
     />
   </head>
   <body class="bg-gray-100">
@@ -22,17 +34,28 @@
         hx-get="/ui/login/"
         hx-swap="delete"
         hx-target="#authContainer"
-        onclick="document.getElementById('routesContainer').innerHTML = ''"
+        onclick="clearPage(); "
       >
         Login
       </button>
+
+      <button
+        class="bg-blue-500 text-white py-2 px-4 rounded"
+        hx-get="/ui/prompts_input/"
+        hx-swap="innerHTML"
+        hx-target="#mapContainer"
+        onclick="clearPage(); "
+      >
+        Plan Route
+      </button>
+
       <button
         class="bg-blue-500 text-white py-2 px-4 rounded"
         hx-get="/ui/feed/?query_type=top_routes"
         hx-swap="innerHTML"
         hx-target="#routesContainer"
-        data-query-type="top_routes"
-        onclick="clearPage()"
+        hx-vars="query_type:'top_routes'"
+        onclick="clearPage(); updateQueryType('top_routes')"
       >
         Global Feed
       </button>
@@ -41,8 +64,8 @@
         hx-get="/ui/feed/?query_type=user_routes"
         hx-swap="innerHTML"
         hx-target="#routesContainer"
-        data-query-type="user_routes"
-        onclick="clearPage()"
+        hx-vars="query_type:'user_routes'"
+        onclick="clearPage(); updateQueryType('user_routes')"
       >
         User Routes
       </button>
@@ -51,7 +74,8 @@
         hx-get="/ui/feed/?query_type=user_routes_fav"
         hx-swap="innerHTML"
         hx-target="#routesContainer"
-        onclick="clearPage()"
+        hx-vars="query_type:'user_routes_fav'"
+        onclick="clearPage(); updateQueryType('user_routes_fav')"
       >
         User Own's Favourites
       </button>
@@ -60,29 +84,39 @@
         hx-get="/ui/feed/?query_type=user_feed_fav"
         hx-swap="innerHTML"
         hx-target="#routesContainer"
-        onclick="clearPage()"
+        hx-vars="query_type:'user_feed_fav'"
+        onclick="clearPage(); updateQueryType('user_feed_fav')"
       >
         User Favourites
       </button>
     </nav>
 
     <main id="mainContent" class="p-6">
-      <div id="authContainer" class="mb-4"></div>
+      <div id="authContainer" class="mb-4">
+        <!-- Login form will be loaded here -->
+      </div>
 
-      <div id="routesContainer" class="">
+      <div id="mapContainer" class="sticky top-0 z-50 mb-4">
+        <!-- Map will be loaded here -->
+      </div>
+
+      <div id="routesContainer" class="mb-4">
         <!-- Routes will be loaded here -->
       </div>
       <!-- {% block content %}{% endblock %} -->
     </main>
-
-    <footer class="bg-blue-500 text-white p-6 text-center">
-      <p>&copy; 2023 Settle-Aid. All rights reserved.</p>
-    </footer>
   </body>
   <script>
     function clearPage() {
       document.getElementById("authContainer").innerHTML = "";
       document.getElementById("routesContainer").innerHTML = "";
+      document.getElementById("mapContainer").innerHTML = "";
+    }
+
+    let currentQueryType = "top_routes"; // default value
+
+    function updateQueryType(queryType) {
+      currentQueryType = queryType;
     }
   </script>
 </html>

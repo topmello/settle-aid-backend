@@ -1,0 +1,68 @@
+<body id="mapContainer" class="bg-gray-100 p-6">
+  <div class="bg-white p-4 rounded-md shadow-md">
+    <div class="mb-4">
+      <h2 class="text-xl font-semibold mb-2">
+        Tell us more about your preferences
+      </h2>
+      <!-- Activity Options -->
+      <div class="grid grid-cols-2 gap-4">
+        <div class="flex flex-col items-center">
+          <div class="mb-2">Shopping</div>
+          <input
+            id="shopping"
+            type="text"
+            placeholder="Shopping"
+            class="border p-2 rounded-md text-center"
+          />
+        </div>
+        <div class="flex flex-col items-center">
+          <div class="mb-2">Dining</div>
+          <input
+            id="dining"
+            type="text"
+            placeholder="Dining"
+            class="border p-2 rounded-md text-center"
+          />
+        </div>
+        <div class="flex flex-col items-center">
+          <div class="mb-2">Travelling</div>
+          <input
+            id="travelling"
+            type="text"
+            placeholder="Travelling"
+            class="border p-2 rounded-md text-center"
+          />
+        </div>
+        <div class="flex flex-col items-center">
+          <div class="mb-2">Health</div>
+          <input
+            id="health"
+            type="text"
+            placeholder="Health"
+            class="border p-2 rounded-md text-center"
+          />
+        </div>
+      </div>
+    </div>
+    <button
+      class="bg-blue-500 text-white py-2 px-4 rounded"
+      hx-post="/ui/search/map/"
+      hx-swap="innerHTML"
+      hx-target="#mapContainer"
+      hx-ext="json-enc"
+      hx-vals='{
+          "query": ["museum", "Indian", "Seafood"],
+          "negative_query": ["Boring", "", "Spicy"],
+          "location_type": ["landmark", "restaurant", "restaurant"],
+          "longitude": 144.9549,
+          "latitude": -37.81803,
+          "distance_threshold": 1000,
+          "similarity_threshold": 0,
+          "negative_similarity_threshold": 0,
+          "route_type": "walking"
+      }'
+    >
+      Plan Route
+    </button>
+  </div>
+</body>
