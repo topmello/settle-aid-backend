@@ -20,17 +20,19 @@ class CustomOAuth2PasswordBearer(OAuth2PasswordBearer):
 
     async def __call__(self, request: Request):
 
-        authorization: str = request.headers.get("Authorization", "")
-        cookie_token: str = request.cookies.get("access_token", "")
-
+        authorization: str = request.headers.get("Authorization")
+        cookie_token: str = request.cookies.get("access_token")
         if authorization and authorization.startswith("Bearer"):
             token = authorization.split("Bearer ")[-1].strip()
             if not token:
                 raise InvalidCredentialsException()
             return token
 
-        if cookie_token:
+        elif cookie_token:
             return cookie_token
+
+        else:
+            raise InvalidCredentialsException()
 
 
 oauth2_scheme = CustomOAuth2PasswordBearer(tokenUrl="login")

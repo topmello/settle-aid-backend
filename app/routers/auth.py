@@ -136,7 +136,8 @@ async def login(
     is_web_ui = request.headers.get("X-Client-Type") == "web-ui"
 
     if is_web_ui:
-        return templates.TemplateResponse("welcome.html", {"request": request, "username": user_logged_in.username})
+        response_content = templates.TemplateResponse(
+            "welcome.html", {"request": request, "username": user_logged_in.username}).body
         # If it's a web UI request, set the JWT as a cookie
         response = Response(content=response_content, media_type="text/html")
         response.set_cookie(

@@ -157,6 +157,98 @@ async def delete_route(
     return Response(status_code=204)
 
 
+async def get_routes_(
+    query_type: str,
+    user_id: int,
+    offset: int = 0,
+    limit: int = 10,
+    db: Session = get_db(),
+    r: aioredis.Redis = get_redis_feed_db(),
+    current_user: schemas.User = Depends(oauth2.get_current_user)
+):
+    if current_user.user_id != user_id:
+        raise NotAuthorisedException()
+
+    if limit > 50:
+        raise ParametersTooLargeException()
+
+    if db.query(models.User).filter(models.User.user_id == user_id).first() is None:
+        raise UserNotFoundException()
+
+    if query_type == 'all':
+        route_ids = (
+            db.query(models.Route.route_id)
+            .filter(models.Route.created_by_user_id == user_id)
+            .order_by(models.Route.created_at.desc())
+            .offset(offset)
+            .limit(limit)
+            .all()
+        )
+    elif query_type == 'fav':
+
+        route_ids = (
+            db.query(models.User_Route_Vote.route_id)
+            .filter(models.User_Route_Vote.user_id == user_id)
+            .join(models.Route, models.Route.route_id == models.User_Route_Vote.route_id)
+            .filter(models.Route.created_by_user_id == user_id)
+            .order_by(models.Route.created_at.desc())
+            .offset(offset)
+            .limit(limit)
+            .all()
+        )
+    elif query_type == 'feed_fav':
+        route_ids = (
+            db.query(models.User_Route_Vote.route_id)
+            .filter(models.User_Route_Vote.user_id == user_id)
+            .join(models.Route, models.Route.route_id == models.User_Route_Vote.route_id)
+            .order_by(models.Route.created_at.desc())
+            .offset(offset)
+            .limit(limit)
+            .all()
+        )
+
+    else:
+        raise InvalidSearchQueryException()
+
+    if not route_ids:
+        raise RouteNotFoundException()
+
+    route_ids = [route_id[0] for route_id in route_ids]
+
+    route_objects = [
+        await get_route_from_redis_or_db(route_id, r, db)
+        for route_id in route_ids
+    ]
+    vote_details = (
+        db.query(
+            models.User_Route_Vote.route_id,
+            func.count(models.User_Route_Vote.route_id).label("num_votes"),
+            (func.sum(case((models.User_Route_Vote.user_id ==
+             current_user.user_id, 1), else_=0)) > 0).label('voted_by_user')
+        )
+        .filter(models.User_Route_Vote.route_id.in_(route_ids))
+        .group_by(models.User_Route_Vote.route_id)
+        .all()
+    )
+
+    vote_details = (
+        db.query(
+            models.User_Route_Vote.route_id,
+            func.count(models.User_Route_Vote.route_id).label("num_votes"),
+            (func.sum(case((models.User_Route_Vote.user_id ==
+             current_user.user_id, 1), else_=0)) > 0).label('voted_by_user')
+        )
+        .filter(models.User_Route_Vote.route_id.in_(route_ids))
+        .group_by(models.User_Route_Vote.route_id)
+        .all()
+    )
+
+    routes_out = merge_route_details(
+        route_objects=route_objects, vote_details=vote_details)
+
+    return routes_out
+
+
 @router.get('/user/{user_id}/', response_model=list[schemas.RouteVoteOutUser])
 @limiter.limit("5/second")
 async def get_routes(
@@ -182,50 +274,7 @@ async def get_routes(
     - List[schemas.RouteVoteOut]: A list of routes and their respective vote counts.
     """
 
-    if current_user.user_id != user_id:
-        raise NotAuthorisedException()
-
-    if limit > 50:
-        raise ParametersTooLargeException()
-
-    if db.query(models.User).filter(models.User.user_id == user_id).first() is None:
-        raise UserNotFoundException()
-
-    route_ids = (
-        db.query(models.Route.route_id)
-        .filter(models.Route.created_by_user_id == user_id)
-        .order_by(models.Route.created_at.desc())
-        .offset(offset)
-        .limit(limit)
-        .all()
-    )
-
-    if not route_ids:
-        raise RouteNotFoundException()
-
-    route_ids = [route_id[0] for route_id in route_ids]
-
-    route_objects = [
-        await get_route_from_redis_or_db(route_id, r, db)
-        for route_id in route_ids
-    ]
-
-    vote_details = (
-        db.query(
-            models.User_Route_Vote.route_id,
-            func.count(models.User_Route_Vote.route_id).label("num_votes"),
-            (func.sum(case((models.User_Route_Vote.user_id ==
-             current_user.user_id, 1), else_=0)) > 0).label('voted_by_user')
-        )
-        .filter(models.User_Route_Vote.route_id.in_(route_ids))
-        .group_by(models.User_Route_Vote.route_id)
-        .all()
-    )
-
-    routes_out = merge_route_details(
-        route_objects=route_objects, vote_details=vote_details)
-
-    return routes_out
+    return await get_routes_('all', user_id, offset, limit, db, r, current_user)
 
 
 @router.get('/user/fav/{user_id}/', response_model=list[schemas.RouteVoteOutUser])
@@ -253,52 +302,7 @@ async def get_routes(
     - List[schemas.RouteVoteOut]: A list of favorite routes and their respective vote counts.
     """
 
-    if current_user.user_id != user_id:
-        raise NotAuthorisedException()
-
-    if limit > 50:
-        raise ParametersTooLargeException()
-
-    if db.query(models.User).filter(models.User.user_id == user_id).first() is None:
-        raise UserNotFoundException()
-
-    route_ids = (
-        db.query(models.User_Route_Vote.route_id)
-        .filter(models.User_Route_Vote.user_id == user_id)
-        .join(models.Route, models.Route.route_id == models.User_Route_Vote.route_id)
-        .filter(models.Route.created_by_user_id == user_id)
-        .order_by(models.Route.created_at.desc())
-        .offset(offset)
-        .limit(limit)
-        .all()
-    )
-
-    if not route_ids:
-        raise RouteNotFoundException()
-
-    route_ids = [route_id[0] for route_id in route_ids]
-
-    route_objects = [
-        await get_route_from_redis_or_db(route_id, r, db)
-        for route_id in route_ids
-    ]
-
-    vote_details = (
-        db.query(
-            models.User_Route_Vote.route_id,
-            func.count(models.User_Route_Vote.route_id).label("num_votes"),
-            (func.sum(case((models.User_Route_Vote.user_id ==
-             current_user.user_id, 1), else_=0)) > 0).label('voted_by_user')
-        )
-        .filter(models.User_Route_Vote.route_id.in_(route_ids))
-        .group_by(models.User_Route_Vote.route_id)
-        .all()
-    )
-
-    routes_out = merge_route_details(
-        route_objects=route_objects, vote_details=vote_details)
-
-    return routes_out
+    return await get_routes_('fav', user_id, offset, limit, db, r, current_user)
 
 
 @router.get('/feed/user/fav/{user_id}/', response_model=list[schemas.RouteVoteOutUser])
@@ -326,51 +330,7 @@ async def get_routes(
     - List[schemas.RouteVoteOut]: A list of favorite routes and their respective vote counts.
     """
 
-    if current_user.user_id != user_id:
-        raise NotAuthorisedException()
-
-    if limit > 50:
-        raise ParametersTooLargeException()
-
-    if db.query(models.User).filter(models.User.user_id == user_id).first() is None:
-        raise UserNotFoundException()
-
-    route_ids = (
-        db.query(models.User_Route_Vote.route_id)
-        .filter(models.User_Route_Vote.user_id == user_id)
-        .join(models.Route, models.Route.route_id == models.User_Route_Vote.route_id)
-        .order_by(models.Route.created_at.desc())
-        .offset(offset)
-        .limit(limit)
-        .all()
-    )
-
-    if not route_ids:
-        raise RouteNotFoundException()
-
-    route_ids = [route_id[0] for route_id in route_ids]
-
-    route_objects = [
-        await get_route_from_redis_or_db(route_id, r, db)
-        for route_id in route_ids
-    ]
-
-    vote_details = (
-        db.query(
-            models.User_Route_Vote.route_id,
-            func.count(models.User_Route_Vote.route_id).label("num_votes"),
-            (func.sum(case((models.User_Route_Vote.user_id ==
-             current_user.user_id, 1), else_=0)) > 0).label('voted_by_user')
-        )
-        .filter(models.User_Route_Vote.route_id.in_(route_ids))
-        .group_by(models.User_Route_Vote.route_id)
-        .all()
-    )
-
-    routes_out = merge_route_details(
-        route_objects=route_objects, vote_details=vote_details)
-
-    return routes_out
+    return await get_routes_('feed_fav', user_id, offset, limit, db, r, current_user)
 
 
 @async_retry()

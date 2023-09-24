@@ -11,38 +11,78 @@
       rel="stylesheet"
     />
   </head>
-  <body>
-    <header>
-      <h1>Settle-Aid</h1>
+  <body class="bg-gray-100">
+    <header class="bg-blue-500 text-white p-6">
+      <h1 class="text-2xl font-bold">Settle-Aid</h1>
     </header>
 
-    <nav>
-      <!-- This is where you could have main navigation links, if any -->
-
+    <nav class="flex justify-between p-6 bg-white shadow-md">
       <button
+        class="bg-green-500 text-white py-2 px-4 rounded"
         hx-get="/ui/login/"
-        hx-swap="innerHTML"
-        hx-target="#loginContainer"
+        hx-swap="delete"
+        hx-target="#authContainer"
+        onclick="document.getElementById('routesContainer').innerHTML = ''"
       >
         Login
       </button>
       <button
-        hx-get="/ui/feed/"
+        class="bg-blue-500 text-white py-2 px-4 rounded"
+        hx-get="/ui/feed/?query_type=top_routes"
         hx-swap="innerHTML"
         hx-target="#routesContainer"
+        data-query-type="top_routes"
+        onclick="clearPage()"
       >
-        Load Routes
+        Global Feed
+      </button>
+      <button
+        class="bg-blue-500 text-white py-2 px-4 rounded"
+        hx-get="/ui/feed/?query_type=user_routes"
+        hx-swap="innerHTML"
+        hx-target="#routesContainer"
+        data-query-type="user_routes"
+        onclick="clearPage()"
+      >
+        User Routes
+      </button>
+      <button
+        class="bg-blue-500 text-white py-2 px-4 rounded"
+        hx-get="/ui/feed/?query_type=user_routes_fav"
+        hx-swap="innerHTML"
+        hx-target="#routesContainer"
+        onclick="clearPage()"
+      >
+        User Own's Favourites
+      </button>
+      <button
+        class="bg-blue-500 text-white py-2 px-4 rounded"
+        hx-get="/ui/feed/?query_type=user_feed_fav"
+        hx-swap="innerHTML"
+        hx-target="#routesContainer"
+        onclick="clearPage()"
+      >
+        User Favourites
       </button>
     </nav>
 
-    <main id="mainContent">
-      <div id="loginContainer"></div>
-      <div id="routesContainer">
+    <main id="mainContent" class="p-6">
+      <div id="authContainer" class="mb-4"></div>
+
+      <div id="routesContainer" class="">
         <!-- Routes will be loaded here -->
       </div>
-      {% block content %}{% endblock %}
+      <!-- {% block content %}{% endblock %} -->
     </main>
 
-    <footer></footer>
+    <footer class="bg-blue-500 text-white p-6 text-center">
+      <p>&copy; 2023 Settle-Aid. All rights reserved.</p>
+    </footer>
   </body>
+  <script>
+    function clearPage() {
+      document.getElementById("authContainer").innerHTML = "";
+      document.getElementById("routesContainer").innerHTML = "";
+    }
+  </script>
 </html>
