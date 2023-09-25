@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 import aioredis
 import folium
 import tempfile
@@ -8,10 +9,11 @@ from pathlib import Path
 from ..common import templates
 from ..database import get_db
 from ..redis import get_redis_feed_db
-from .. import schemas, oauth2
+from .. import schemas, oauth2, models
 
-from .route import fetch_top_routes, get_routes_, get_route_
+from .route import fetch_top_routes, get_routes_, get_route_, publish_route_
 from .search import search_by_query_seq_v2_
+from .vote import add_vote_, remove_vote_
 
 router = APIRouter(
     prefix='/ui',
@@ -159,3 +161,48 @@ async def get_route_map(
     route = await get_route_(route_id, db, r)
 
     return await create_map(route.route)
+
+
+@router.post("/route/vote/{route_id}/")
+async def add_vote(
+        request: Request,
+        route_id: int,
+        db: Session = Depends(get_db),
+        r: aioredis.Redis = Depends(get_redis_feed_db),
+        current_user: schemas.User = Depends(oauth2.get_current_user)
+):
+    await add_vote_(route_id, db, r, current_user)
+
+    num_votes = db.query(func.count(models.User_Route_Vote.route_id)).filter(
+        models.User_Route_Vote.route_id == route_id).scalar()
+
+    return num_votes
+
+
+@router.delete("/route/vote/{route_id}/")
+async def remove_vote(
+        request: Request,
+        route_id: int,
+        db: Session = Depends(get_db),
+        r: aioredis.Redis = Depends(get_redis_feed_db),
+        current_user: schemas.User = Depends(oauth2.get_current_user)
+):
+    await remove_vote_(route_id, db, r, current_user)
+
+    num_votes = db.query(func.count(models.User_Route_Vote.route_id)).filter(
+        models.User_Route_Vote.route_id == route_id).scalar()
+
+    return num_votes
+
+
+@router.post("/route/publish/{route_id}/")
+async def publish_route(
+        request: Request,
+        route_id: int,
+        db: Session = Depends(get_db),
+        r: aioredis.Redis = Depends(get_redis_feed_db),
+        current_user: schemas.User = Depends(oauth2.get_current_user)
+):
+    await publish_route_(route_id, db, r, current_user)
+
+    return PlainTextResponse(content="Published")

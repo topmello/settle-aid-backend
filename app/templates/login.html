@@ -39,8 +39,19 @@
         hx-headers='{"X-Client-Type": "web-ui"}'
         hx-swap="outerHTML"
         hx-target="#loginContainer"
+        onclick="document.getElementById('loadFeed').click();"
       >
         Log in
+        <span
+          id="loadFeed"
+          hx-get="/ui/feed/"
+          hx-swap="innerHTML"
+          hx-target="#routesContainer"
+          hx-vars="js:{query_type: document.getElementById('queryType').value}"
+          onclick="updateQueryType(document.getElementById('queryType').value)"
+          style="display: none"
+        >
+        </span>
       </button>
     </div>
   </form>

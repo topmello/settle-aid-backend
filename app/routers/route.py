@@ -374,6 +374,26 @@ async def cleanup_expired_routes(r: aioredis.Redis):
             await r.zrem('routes_feed', route_id)
 
 
+async def publish_route_(
+        route_id: int,
+        db: Session,
+        r: aioredis.Redis,
+        current_user: schemas.User
+):
+    # Check if route exists
+    if db.query(models.Route).filter(models.Route.route_id == route_id).first() is None:
+        raise RouteNotFoundException()
+
+    # Check if the route belongs to the current user
+    route = db.query(models.Route).filter(
+        models.Route.route_id == route_id).first()
+    if route.created_by_user_id != current_user.user_id:
+        raise NotAuthorisedException()
+
+    # Publish the route in Redis
+    await publish_route_in_redis(route_id, r, db)
+
+
 @router.post("/publish/{route_id}/", status_code=201)
 async def publish_route(
         request: Request,
@@ -404,17 +424,7 @@ async def publish_route(
     - NotAuthorisedException: If the authenticated user is not the author of the specified route.
     """
     # Check if route exists
-    if db.query(models.Route).filter(models.Route.route_id == route_id).first() is None:
-        raise RouteNotFoundException()
-
-    # Check if the route belongs to the current user
-    route = db.query(models.Route).filter(
-        models.Route.route_id == route_id).first()
-    if route.created_by_user_id != current_user.user_id:
-        raise NotAuthorisedException()
-
-    # Publish the route in Redis
-    await publish_route_in_redis(route_id, r, db)
+    await publish_route_(route_id, db, r, current_user)
 
     return {"detail": {
         "type": "published",
