@@ -103,7 +103,7 @@ async def remove_vote_(
     await decrement_route_votes_in_redis(route_id, r)
 
 
-@router.delete("/{route_id}/", status_code=200)
+@router.delete("/{route_id}/", status_code=204)
 async def delete_vote(
         route_id: int,
         db: Session = Depends(get_db),

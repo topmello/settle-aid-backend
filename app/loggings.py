@@ -1,7 +1,7 @@
 from fastapi import Request, Depends, HTTPException
 from fastapi.exceptions import RequestValidationError
 from slowapi.errors import RateLimitExceeded
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from typing import Optional, Union
 import aioredis
