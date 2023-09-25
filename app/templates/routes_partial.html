@@ -17,6 +17,30 @@
     </div>
     <div class="mt-4 flex justify-end space-x-2">
       <!-- Buttons go here -->
+      <!-- Like Button -->
+      <button
+        class="border border-green-500 text-green-500 rounded px-4 py-2"
+        hx-post="/vote/{{ route.route.route_id }}/"
+        hx-trigger="click"
+      >
+        Like
+      </button>
+      <!-- Unlike Button -->
+      <button
+        class="border border-red-500 text-red-500 rounded px-4 py-2"
+        hx-delete="/vote/{{ route.route.route_id }}/"
+        hx-trigger="click"
+      >
+        Unlike
+      </button>
+      <!-- Publish Button -->
+      <button
+        class="border border-blue-500 text-blue-500 rounded px-4 py-2"
+        hx-post="/route/publish/{{ route.route.route_id }}/"
+        hx-trigger="click"
+      >
+        Publish
+      </button>
       <button
         class="border border-blue-500 text-blue-500 rounded px-4 py-2"
         hx-get="/ui/route/map/{{ route.route.route_id }}/"

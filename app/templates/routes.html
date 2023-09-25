@@ -3,7 +3,10 @@
   <div class="bg-gray-100 p-4 m-2 rounded-lg w-96 text-center shadow-lg">
     <h2 class="text-xl font-bold text-blue-500">{{ route.route.route_id }}</h2>
     <!-- Number of Likes -->
-    <div class="text-gray-500">{{ route.num_votes }} Likes</div>
+    <div class="text-gray-500">
+      <span id="likes_{{ route.route.route_id }}">{{ route.num_votes }}</span>
+      Likes
+    </div>
     <!-- Other route details -->
     <div class="mt-2 text-blue-500">
       <!-- Tags go here -->
@@ -17,6 +20,30 @@
     </div>
     <div class="mt-4 flex justify-end space-x-2">
       <!-- Buttons go here -->
+      <!-- Like Button -->
+      <button
+        class="border border-green-500 text-green-500 rounded px-4 py-2"
+        hx-post="/vote/{{ route.route.route_id }}/"
+        hx-trigger="click"
+      >
+        Like
+      </button>
+      <!-- Unlike Button -->
+      <button
+        class="border border-red-500 text-red-500 rounded px-4 py-2"
+        hx-delete="/vote/{{ route.route.route_id }}/"
+        hx-trigger="click"
+      >
+        Unlike
+      </button>
+      <!-- Publish Button -->
+      <button
+        class="border border-blue-500 text-blue-500 rounded px-4 py-2"
+        hx-post="/route/publish/{{ route.route.route_id }}/"
+        hx-trigger="click"
+      >
+        Publish
+      </button>
       <button
         class="border border-blue-500 text-blue-500 rounded px-4 py-2"
         hx-get="/ui/route/map/{{ route.route.route_id }}/"
