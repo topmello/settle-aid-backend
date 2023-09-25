@@ -1,8 +1,6 @@
 <div id="newRoutes" class="flex flex-col items-center">
   {% for route in routes %}
-  <div
-    class="bg-gray-100 p-4 m-2 rounded-lg w-full max-w-md text-center shadow-lg"
-  >
+  <div class="bg-gray-100 p-4 m-2 rounded-lg w-96 text-center shadow-lg">
     <h2 class="text-xl font-bold text-blue-500">{{ route.route.route_id }}</h2>
     <!-- Number of Likes -->
     <div class="text-gray-500">{{ route.num_votes }} Likes</div>
@@ -23,8 +21,9 @@
         class="border border-blue-500 text-blue-500 rounded px-4 py-2"
         hx-get="/ui/route/map/{{ route.route.route_id }}/"
         hx-trigger="click"
-        hx-target="#mapContainer"
+        hx-target="#mapContent"
         hx-swap="innerHTML"
+        onclick="addCloseButton();"
       >
         View Route
       </button>
@@ -33,7 +32,7 @@
   {% endfor %}
   <div
     id="loadingMore"
-    hx-get="/ui/feed/top_routes?offset={{ next_offset }}"
+    hx-get="/ui/feed/top_routes/?offset={{ next_offset }}"
     hx-trigger="revealed"
     hx-swap="outerHTML with #newRoutes"
     hx-vars="query_type:currentQueryType"

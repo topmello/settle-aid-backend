@@ -64,7 +64,7 @@ async def dashboard_ui(
     return templates.TemplateResponse("routes.html", {"request": request, "initial_routes": initial_routes, "next_offset": next_offset})
 
 
-@router.get("/feed/top_routes")
+@router.get("/feed/top_routes/")
 async def get_top_routes_htmx(
         request: Request,
         query_type: str = 'top_routes',
@@ -128,8 +128,9 @@ async def create_map(route: schemas.RouteOutV2):
 
     html = html.replace(
         '<div class="folium-map"',
-        '<div class="folium-map" style="height: 400px; width: 100%;"'
+        '<div class="folium-map" style="height: 400px; width: 100%; z-index: 1; border-radius: 15px;"'
     )
+
     temp_dir.cleanup()
 
     return HTMLResponse(content=html)

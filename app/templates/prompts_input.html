@@ -8,52 +8,98 @@
       <div class="grid grid-cols-2 gap-4">
         <div class="flex flex-col items-center">
           <div class="mb-2">Shopping</div>
-          <input
-            id="shopping"
-            type="text"
-            placeholder="Shopping"
-            class="border p-2 rounded-md text-center"
-          />
+          <label class="flex flex-col items-center">
+            <span class="text-green-500 mb-1">Like</span>
+            <input
+              id="shopping"
+              type="text"
+              placeholder="Shopping"
+              class="border border-green-500 p-2 rounded-md text-center w-4/5"
+            />
+          </label>
+          <label class="flex flex-col items-center">
+            <span class="text-red-500 mb-1">Dislike</span>
+            <input
+              id="shoppingNeg"
+              type="text"
+              placeholder="Shopping"
+              class="border border-red-500 p-2 rounded-md text-center w-4/5"
+            />
+          </label>
         </div>
         <div class="flex flex-col items-center">
           <div class="mb-2">Dining</div>
-          <input
-            id="dining"
-            type="text"
-            placeholder="Dining"
-            class="border p-2 rounded-md text-center"
-          />
+          <label class="flex flex-col items-center">
+            <span class="text-green-500 mb-1">Like</span>
+            <input
+              id="dining"
+              type="text"
+              placeholder="Dining"
+              class="border border-green-500 p-2 rounded-md text-center w-4/5"
+            />
+          </label>
+          <label class="flex flex-col items-center">
+            <span class="text-red-500 mb-1">Dislike</span>
+            <input
+              id="diningNeg"
+              type="text"
+              placeholder="Dining"
+              class="border border-red-500 p-2 rounded-md text-center w-4/5"
+            />
+          </label>
         </div>
         <div class="flex flex-col items-center">
           <div class="mb-2">Travelling</div>
-          <input
-            id="travelling"
-            type="text"
-            placeholder="Travelling"
-            class="border p-2 rounded-md text-center"
-          />
+          <label class="flex flex-col items-center">
+            <span class="text-green-500 mb-1">Like</span>
+            <input
+              id="travelling"
+              type="text"
+              placeholder="Travelling"
+              class="border border-green-500 p-2 rounded-md text-center w-4/5"
+            />
+          </label>
+          <label class="flex flex-col items-center">
+            <span class="text-red-500 mb-1">Dislike</span>
+            <input
+              id="travellingNeg"
+              type="text"
+              placeholder="Travelling"
+              class="border border-red-500 p-2 rounded-md text-center w-4/5"
+            />
+          </label>
         </div>
         <div class="flex flex-col items-center">
           <div class="mb-2">Health</div>
-          <input
-            id="health"
-            type="text"
-            placeholder="Health"
-            class="border p-2 rounded-md text-center"
-          />
+          <label class="flex flex-col items-center">
+            <span class="text-green-500 mb-1">Like</span>
+            <input
+              id="health"
+              type="text"
+              placeholder="Health"
+              class="border border-green-500 p-2 rounded-md text-center w-4/5"
+            />
+          </label>
+          <label class="flex flex-col items-center">
+            <span class="text-red-500 mb-1">Dislike</span>
+            <input
+              id="healthNeg"
+              type="text"
+              placeholder="Health"
+              class="border border-red-500 p-2 rounded-md text-center w-4/5"
+            />
+          </label>
         </div>
-      </div>
     </div>
-    <button
-      class="bg-blue-500 text-white py-2 px-4 rounded"
-      hx-post="/ui/search/map/"
-      hx-swap="innerHTML"
-      hx-target="#mapContainer"
-      hx-ext="json-enc"
-      hx-vals='{
-          "query": ["museum", "Indian", "Seafood"],
-          "negative_query": ["Boring", "", "Spicy"],
-          "location_type": ["landmark", "restaurant", "restaurant"],
+    <div class="mt-4"> <!-- new div for margin-top -->
+      <button
+        class="bg-blue-500 text-white py-2 px-6 rounded mx-auto block"
+        hx-post="/ui/search/map/"
+        hx-swap="innerHTML"
+        hx-target="#mapContent"
+        hx-ext="json-enc"
+        hx-vals='js:{
+          ...buildQueryAndLocationType(),
           "longitude": 144.9549,
           "latitude": -37.81803,
           "distance_threshold": 1000,
@@ -61,8 +107,10 @@
           "negative_similarity_threshold": 0,
           "route_type": "walking"
       }'
-    >
-      Plan Route
-    </button>
+        onclick="addCloseButton();"
+      >
+        Plan Route
+      </button>
+    </div>
   </div>
 </body>

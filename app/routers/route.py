@@ -103,7 +103,7 @@ async def get_route_(
     return route_vote_out
 
 
-@router.get('/{route_id}', response_model=schemas.RouteVoteOut)
+@router.get('/{route_id}/', response_model=schemas.RouteVoteOut)
 @limiter.limit("1/second")
 async def get_route(
         request: Request,
@@ -126,7 +126,7 @@ async def get_route(
     return await get_route_(route_id, db, r)
 
 
-@router.delete('/{route_id}', status_code=204)
+@router.delete('/{route_id}/', status_code=204)
 @limiter.limit("1/second")
 async def delete_route(
         request: Request,

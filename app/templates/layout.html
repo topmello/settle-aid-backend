@@ -24,79 +24,67 @@
     />
   </head>
   <body class="bg-gray-100">
-    <header class="bg-blue-500 text-white p-6">
+    <header
+      class="bg-blue-500 text-white p-6 flex items-center justify-between"
+    >
       <h1 class="text-2xl font-bold">Settle-Aid</h1>
+      <div class="flex items-center space-x-4">
+        <select id="queryType" class="py-2 px-4 rounded bg-blue-700">
+          <option value="top_routes">Global Feed</option>
+          <option value="user_routes">User Routes</option>
+          <option value="user_routes_fav">User Own's Favourites</option>
+          <option value="user_feed_fav">User Favourites</option>
+        </select>
+        <button
+          class="bg-green-500 text-white py-2 px-4 rounded"
+          hx-get="/ui/login/"
+          hx-swap="innerHTML"
+          hx-target="#authContainer"
+          onclick="clearPage(); "
+        >
+          Login
+        </button>
+      </div>
     </header>
 
-    <nav class="flex justify-between p-6 bg-white shadow-md">
+    <nav class="flex justify-center items-center p-6 bg-white shadow-md gap-4">
       <button
-        class="bg-green-500 text-white py-2 px-4 rounded"
-        hx-get="/ui/login/"
-        hx-swap="delete"
-        hx-target="#authContainer"
-        onclick="clearPage(); "
-      >
-        Login
-      </button>
-
-      <button
-        class="bg-blue-500 text-white py-2 px-4 rounded"
+        class="bg-blue-500 text-white py-2 px-4 rounded w-2/5"
         hx-get="/ui/prompts_input/"
         hx-swap="innerHTML"
-        hx-target="#mapContainer"
+        hx-target="#mapContent"
         onclick="clearPage(); "
       >
         Plan Route
       </button>
 
       <button
-        class="bg-blue-500 text-white py-2 px-4 rounded"
-        hx-get="/ui/feed/?query_type=top_routes"
+        class="bg-blue-500 text-white py-2 px-4 rounded w-2/5"
+        hx-get="/ui/feed/"
         hx-swap="innerHTML"
         hx-target="#routesContainer"
-        hx-vars="query_type:'top_routes'"
-        onclick="clearPage(); updateQueryType('top_routes')"
+        hx-vars="js:{query_type: document.getElementById('queryType').value}"
+        onclick="clearPage(); updateQueryType(document.getElementById('queryType').value)"
       >
-        Global Feed
-      </button>
-      <button
-        class="bg-blue-500 text-white py-2 px-4 rounded"
-        hx-get="/ui/feed/?query_type=user_routes"
-        hx-swap="innerHTML"
-        hx-target="#routesContainer"
-        hx-vars="query_type:'user_routes'"
-        onclick="clearPage(); updateQueryType('user_routes')"
-      >
-        User Routes
-      </button>
-      <button
-        class="bg-blue-500 text-white py-2 px-4 rounded"
-        hx-get="/ui/feed/?query_type=user_routes_fav"
-        hx-swap="innerHTML"
-        hx-target="#routesContainer"
-        hx-vars="query_type:'user_routes_fav'"
-        onclick="clearPage(); updateQueryType('user_routes_fav')"
-      >
-        User Own's Favourites
-      </button>
-      <button
-        class="bg-blue-500 text-white py-2 px-4 rounded"
-        hx-get="/ui/feed/?query_type=user_feed_fav"
-        hx-swap="innerHTML"
-        hx-target="#routesContainer"
-        hx-vars="query_type:'user_feed_fav'"
-        onclick="clearPage(); updateQueryType('user_feed_fav')"
-      >
-        User Favourites
+        Load Feed
       </button>
     </nav>
 
     <main id="mainContent" class="p-6">
+      <div
+        hx-get="/ui/login/"
+        hx-swap="innerHTML"
+        hx-target="#authContainer"
+        hx-trigger="load"
+      ></div>
       <div id="authContainer" class="mb-4">
         <!-- Login form will be loaded here -->
       </div>
 
-      <div id="mapContainer" class="sticky top-0 z-50 mb-4">
+      <div id="mapContainer" class="relative rounded-lg sticky top-0 z-10 mb-4">
+        <!-- Close button -->
+
+        <div id="mapContent" class="z-10"></div>
         <!-- Map will be loaded here -->
       </div>
 
@@ -110,13 +98,60 @@
     function clearPage() {
       document.getElementById("authContainer").innerHTML = "";
       document.getElementById("routesContainer").innerHTML = "";
-      document.getElementById("mapContainer").innerHTML = "";
+      document.getElementById("mapContent").innerHTML = "";
+      document.getElementById("closeButton")?.remove();
     }
 
-    let currentQueryType = "top_routes"; // default value
+    function addCloseButton() {
+      setTimeout(function () {
+        const mapContainer = document.getElementById("mapContainer");
+        const closeButton = document.createElement("button");
+        closeButton.id = "closeButton";
+        closeButton.className =
+          "absolute top-0 right-0 bg-red-500 text-white p-2 rounded-lg z-10";
+        closeButton.innerText = "X";
+        closeButton.onclick = closeMap;
+        mapContainer.appendChild(closeButton);
+      }, 500);
+    }
+
+    function closeMap() {
+      document.getElementById("mapContent").innerHTML = "";
+      document.getElementById("closeButton").remove();
+    }
+
+    let currentQueryType = "top_routes";
 
     function updateQueryType(queryType) {
       currentQueryType = queryType;
+    }
+
+    function buildQueryAndLocationType() {
+      const mappings = [
+        { id: "travelling", neg_id: "travellingNeg", type: "landmark" },
+        { id: "shopping", neg_id: "shoppingNeg", type: "grocery" },
+        { id: "health", neg_id: "healthNeg", type: "pharmacy" },
+        { id: "dining", neg_id: "diningNeg", type: "restaurant" },
+      ];
+
+      const query = [];
+      const negative_query = [];
+      const location_type = [];
+      mappings.forEach((mapping) => {
+        const value = document.getElementById(mapping.id).value;
+        if (value) {
+          query.push(value);
+          negative_query.push(
+            document.getElementById(mapping.neg_id).value || ""
+          );
+          location_type.push(mapping.type);
+        }
+      });
+      return {
+        query,
+        negative_query,
+        location_type,
+      };
     }
   </script>
 </html>
