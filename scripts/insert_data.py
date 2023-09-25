@@ -6,25 +6,19 @@ from app.database import get_db
 from app import models
 
 # Dictionary mapping location types to models
-LOCATION_TYPE_MODELS = {
-    "landmark": models.Landmark,
-    "restaurant": models.Restaurant,
-    "grocery": models.Grocery,
-    "pharmacy": models.Pharmacy,
-}
-
-LOCATION_TYPE_DATA = {
-    "landmark": "data/landmarks.json",
-    "restaurant": "data/restaurants_2019.json",
-    "grocery": "data/supermarkets.json",
-    "pharmacy": "data/pharmacies.json",
+DATA_FILES_MODELS = {
+    "landmark": ("data/landmarks.json", models.Landmark),
+    "restaurant": ("data/restaurants_2019.json", models.Restaurant),
+    "grocery": ("data/supermarkets.json", models.Grocery),
+    "pharmacy": ("data/pharmacies.json", models.Pharmacy),
+    "challenge": ("data/challenges.json", models.Challenge)
 }
 
 
-def insert_into_table(location_type: str):
+def insert_into_table(data_type: str):
     """Insert data into database"""
-    file = LOCATION_TYPE_DATA.get(location_type)
-    Model = LOCATION_TYPE_MODELS.get(location_type)
+    file, Model = DATA_FILES_MODELS.get(data_type, (None, None))
+
     if not file or not Model:
         raise ValueError("Location type not found")
 
@@ -39,8 +33,8 @@ def insert_into_table(location_type: str):
 
 
 def main():
-    for location_type in LOCATION_TYPE_MODELS.keys():
-        insert_into_table(location_type)
+    for data_type in DATA_FILES_MODELS.keys():
+        insert_into_table(data_type)
 
 
 if __name__ == "__main__":

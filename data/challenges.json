@@ -1,0 +1,65 @@
+[
+  {
+    "id": 1,
+    "type": "route_generation",
+    "name": "1 Route Generated",
+    "score": 1,
+    "grade": 1
+  },
+  {
+    "id": 2,
+    "type": "route_generation",
+    "name": "5 Routes Generated",
+    "score": 3,
+    "grade": 2
+  },
+  {
+    "id": 3,
+    "type": "route_generation",
+    "name": "10 Routes Generated",
+    "score": 5,
+    "grade": 3
+  },
+  {
+    "id": 4,
+    "type": "favourite_sharing",
+    "name": "10 Favorites Shared",
+    "score": 5,
+    "grade": 1
+  },
+  {
+    "id": 5,
+    "type": "favourite_sharing",
+    "name": "20 Favorites Shared",
+    "score": 10,
+    "grade": 2
+  },
+  {
+    "id": 6,
+    "type": "favourite_sharing",
+    "name": "50 Favorites Shared",
+    "score": 15,
+    "grade": 3
+  },
+  {
+    "id": 7,
+    "type": "distance_travelled",
+    "name": "5,000 steps",
+    "score": 5,
+    "grade": 1
+  },
+  {
+    "id": 8,
+    "type": "distance_travelled",
+    "name": "10,000 steps",
+    "score": 10,
+    "grade": 2
+  },
+  {
+    "id": 9,
+    "type": "distance_travelled",
+    "name": "15,000 steps",
+    "score": 15,
+    "grade": 3
+  }
+]

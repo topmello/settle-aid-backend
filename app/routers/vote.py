@@ -14,12 +14,12 @@ router = APIRouter(
 
 @async_retry()
 async def increment_route_votes_in_redis(route_id: int, r: aioredis.Redis):
-    await r.zincrby('routes_leaderboard', 1, route_id)
+    await r.zincrby('routes_feed', 1, route_id)
 
 
 @async_retry()
 async def decrement_route_votes_in_redis(route_id: int, r: aioredis.Redis):
-    await r.zincrby('routes_leaderboard', -1, route_id)
+    await r.zincrby('routes_feed', -1, route_id)
 
 
 @router.post("/{route_id}/", status_code=201)

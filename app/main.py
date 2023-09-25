@@ -21,11 +21,11 @@ from .common import templates, get_current_username_doc
 description = """
 ## UI 🖥️
 Please go to /ui/ to view the web UI.
-[Click here](https://https://api.settle-aid.tech/ui/)
+[Click here](https://api.settle-aid.tech/ui/)
 
 ## Logs 📜
 Please go to /logs/ to view the logs.
-[Click here](https://https://api.settle-aid.tech/logs/)
+[Click here](https://api.settle-aid.tech/logs/)
 
 ## HTTP Exceptions 🚨
 | Exception Type               | Status Code | Type                      | Message                                                                          |

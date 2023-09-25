@@ -5,6 +5,7 @@ import aioredis
 from datetime import datetime, timedelta
 from typing import List, Tuple, Dict
 import json
+from time import time, mktime
 
 from .. import schemas, models, oauth2
 from ..database import get_db
@@ -341,11 +342,23 @@ async def get_routes(
 @async_retry()
 async def publish_route_in_redis(route_id: int, r: aioredis.Redis, db: Session):
 
+    # Assume the epoch time is January 1, 2022
+    epoch_time = mktime((2022, 1, 1, 0, 0, 0, 0, 0, 0))
+    max_time = mktime((2030, 1, 1, 0, 0, 0, 0, 0, 0))
+
+    # Current time in seconds
+    current_time_seconds = time()
+
+    normalized_timestamp = (current_time_seconds -
+                            epoch_time) / (max_time - epoch_time)
+
     num_votes = db.query(func.count(models.User_Route_Vote.route_id)).filter(
         models.User_Route_Vote.route_id == route_id).scalar()
 
+    score = num_votes + normalized_timestamp
+
     # Add the route to the ZSET with a score of 0
-    await r.zadd('routes_feed', {route_id: num_votes})
+    await r.zadd('routes_feed', {route_id: score})
     # Set a separate expiration key for the route
     # 86400 seconds = 1 day
     await r.setex(f"route_expiry:{route_id}", 86400, 'expire')
@@ -361,7 +374,7 @@ async def cleanup_expired_routes(r: aioredis.Redis):
             await r.zrem('routes_feed', route_id)
 
 
-@router.post("/publish/{route_id}", status_code=201)
+@router.post("/publish/{route_id}/", status_code=201)
 async def publish_route(
         request: Request,
         route_id: int,
@@ -417,7 +430,7 @@ async def fetch_top_routes(order_by: str, offset: int, limit: int, r: aioredis.R
     if order_by not in order_by_options:
         raise InvalidSearchQueryException()
 
-    # Then, fetch top routes from Redis
+    # Fetch top routes from Redis
     route_ids_with_votes = await r.zrevrange('routes_feed', offset, offset+limit-1, withscores=True)
     route_ids = [route[0] for route in route_ids_with_votes]
 
@@ -442,7 +455,7 @@ async def fetch_top_routes(order_by: str, offset: int, limit: int, r: aioredis.R
     return routes_out
 
 
-@router.get("/feed/top_routes", response_model=list[schemas.RouteVoteOutUser])
+@router.get("/feed/top_routes/", response_model=list[schemas.RouteVoteOutUser])
 async def get_top_routes(
         request: Request,
         order_by: str = 'num_votes',

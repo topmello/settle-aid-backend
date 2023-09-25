@@ -1,6 +1,6 @@
 from .database import Base
 
-from sqlalchemy import Column, Integer, String, Float, TIMESTAMP, text, ForeignKey, Boolean, ARRAY
+from sqlalchemy import Column, Integer, String, Float, TIMESTAMP, text, ForeignKey, Boolean, ARRAY, Index, UniqueConstraint
 from sqlalchemy.orm import mapped_column
 from pgvector.sqlalchemy import Vector
 
@@ -164,3 +164,30 @@ class Prompt_Pharmacy(Base):
     location_id = Column(Integer, ForeignKey("pharmacies.id"), nullable=False)
     created_at = Column(TIMESTAMP(timezone=True),
                         server_default=text("now()"), nullable=False)
+
+
+class Challenge(Base):
+    __tablename__ = "challenges"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    type = Column(String, nullable=False)
+    grade = Column(Integer, nullable=False)
+    score = Column(Float, nullable=False)
+
+
+class User_Challenge(Base):
+    __tablename__ = "user_challenges"
+
+    user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"),
+                     nullable=False, primary_key=True)
+    challenge_id = Column(Integer, ForeignKey("challenges.challenge_id", ondelete="CASCADE"),
+                          nullable=False, primary_key=True)
+    year = Column(Integer, nullable=False)
+    month = Column(Integer, nullable=False)
+    day = Column(Integer, nullable=False)
+    idx_year_month_day = Index('idx_year_month_day', year, month, day)
+    progress = Column(Float, nullable=False, default=0.0)
+
+    __table_args__ = (UniqueConstraint('user_id', 'challenge_id',
+                      'year', 'month', 'day', name='uix_user_challenge_date'),)
