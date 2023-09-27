@@ -44,8 +44,16 @@ alembic downgrade base
 
 ## Manually access DB
 
+### Postgres
+
 ```bash
 psql -U db_user -d database
+```
+
+### Redis
+
+```bash
+redis-cli -a topmelloredis -n $dbnumber
 ```
 
 ## Backup database

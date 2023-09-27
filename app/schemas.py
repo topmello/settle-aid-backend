@@ -260,5 +260,5 @@ class ChallengeScoreOut(BaseModel):
 
 
 class LeaderboardOut(BaseModel):
-    user_id: int
+    username: str
     score: float

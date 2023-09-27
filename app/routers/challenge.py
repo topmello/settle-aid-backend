@@ -36,7 +36,7 @@ async def get_leaderboard_(
     leaderboard_entries = await r.zrevrange(key, 0, limit-1, withscores=True)
 
     # Format the output
-    result = [{"user_id":  int(entry[0]), "score": entry[1]}
+    result = [{"username":  entry[0], "score": entry[1]}
               for entry in leaderboard_entries]
 
     return result
@@ -169,14 +169,25 @@ async def calculate_weekly_score(
 
 
 @async_retry()
-async def update_score_in_redis(user_id: int, score: float, r: aioredis.Redis):
+async def update_score_in_redis(user_id: int, score: float, r: aioredis.Redis, db: Session):
     # Get the current week number and year
     current_date = datetime.now()
     year, week_num = current_date.isocalendar()[0:2]
 
     # Add the user and their score to the ZSET for the current week
     key = f'challenge_leaderboard_score:{year}:{week_num}'
-    await r.zincrby(key, score, user_id)
+    username = db.query(models.User.username).filter(
+        models.User.user_id == user_id).first()[0]
+    print(username)
+
+    await r.zincrby(key, score, username)
+
+    # Check if the key already has an expiration time set
+    ttl = await r.ttl(key)
+
+    if ttl == -1:  # -1 indicates that the key does not have an expiration time
+        # Set the expiration time to 4 weeks (in seconds)
+        await r.expire(key, 4 * 7 * 24 * 60 * 60)
 
 
 async def add_challenge_common(
@@ -233,7 +244,7 @@ async def add_challenge_common(
         # If the progress is 1, and score is not added yet, update the score in Redis
         if progress == 1.0 and not user_challenge.score_added:
             # Use the score from the challenge
-            await update_score_in_redis(user_id, challenge.score, r)
+            await update_score_in_redis(user_id, challenge.score, r, db)
             user_challenge.score_added = True
             db.commit()
 
