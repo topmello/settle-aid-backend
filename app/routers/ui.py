@@ -14,6 +14,7 @@ from .. import schemas, oauth2, models
 from .route import fetch_top_routes, get_routes_, get_route_, publish_route_
 from .search import search_by_query_seq_v2_
 from .vote import add_vote_, remove_vote_
+from .challenge import get_leaderboard_
 
 router = APIRouter(
     prefix='/ui',
@@ -206,3 +207,19 @@ async def publish_route(
     await publish_route_(route_id, db, r, current_user)
 
     return PlainTextResponse(content="Published")
+
+
+@router.get("/challenges/")
+async def challenges(
+    request: Request,
+    db: Session = Depends(get_db),
+    r: aioredis.Redis = Depends(get_redis_feed_db),
+    current_user: schemas.User = Depends(oauth2.get_current_user)
+):
+
+    leaderboard = await get_leaderboard_(10, r)
+    return templates.TemplateResponse(
+        "challenges.html", {
+            "request": request,
+            "leaderboard": leaderboard
+        })

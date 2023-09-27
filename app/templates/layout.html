@@ -69,6 +69,16 @@
       >
         Load Feed
       </button>
+
+      <button
+        class="bg-blue-500 text-white py-2 px-4 rounded w-2/5"
+        hx-get="/ui/challenges/"
+        hx-swap="outerHTML"
+        hx-target="#challengesContainer"
+        onclick="clearPage(); "
+      >
+        Challenges
+      </button>
     </nav>
 
     <main id="mainContent" class="p-6">
@@ -92,7 +102,9 @@
       <div id="routesContainer" class="mb-4">
         <!-- Routes will be loaded here -->
       </div>
-      <!-- {% block content %}{% endblock %} -->
+      <div id="challengesContainer" class="mb-4">
+        <!-- Challenges will be loaded here -->
+      </div>
     </main>
   </body>
   <script>
@@ -100,6 +112,7 @@
       document.getElementById("authContainer").innerHTML = "";
       document.getElementById("routesContainer").innerHTML = "";
       document.getElementById("mapContent").innerHTML = "";
+      document.getElementById("challengesContainer").innerHTML = "";
       document.getElementById("closeButton")?.remove();
     }
 

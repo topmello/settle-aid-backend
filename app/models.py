@@ -1,7 +1,7 @@
 from .database import Base
 
 from sqlalchemy import Column, Integer, String, Float, TIMESTAMP, text, ForeignKey, Boolean, ARRAY, Index, UniqueConstraint
-from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import mapped_column, relationship
 from pgvector.sqlalchemy import Vector
 
 from geoalchemy2 import Geometry
@@ -174,6 +174,8 @@ class Challenge(Base):
     type = Column(String, nullable=False)
     grade = Column(Integer, nullable=False)
     score = Column(Float, nullable=False)
+    user_challenges = relationship(
+        "User_Challenge", back_populates="challenge")
 
 
 class User_Challenge(Base):
@@ -181,13 +183,12 @@ class User_Challenge(Base):
 
     user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"),
                      nullable=False, primary_key=True)
-    challenge_id = Column(Integer, ForeignKey("challenges.challenge_id", ondelete="CASCADE"),
+    challenge_id = Column(Integer, ForeignKey("challenges.id", ondelete="CASCADE"),
                           nullable=False, primary_key=True)
-    year = Column(Integer, nullable=False)
-    month = Column(Integer, nullable=False)
-    day = Column(Integer, nullable=False)
-    idx_year_month_day = Index('idx_year_month_day', year, month, day)
+    challenge = relationship("Challenge", back_populates="user_challenges")
+    year = Column(Integer, nullable=False, primary_key=True)
+    month = Column(Integer, nullable=False, primary_key=True)
+    day = Column(Integer, nullable=False, primary_key=True)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False)
     progress = Column(Float, nullable=False, default=0.0)
-
-    __table_args__ = (UniqueConstraint('user_id', 'challenge_id',
-                      'year', 'month', 'day', name='uix_user_challenge_date'),)
+    score_added = Column(Boolean, nullable=False, default=False)

@@ -32,15 +32,12 @@ def upgrade() -> None:
             'users.user_id', ondelete="CASCADE"), nullable=False, primary_key=True),
         sa.Column("challenge_id", sa.Integer, sa.ForeignKey(
             'challenges.id', ondelete="CASCADE"), nullable=False, primary_key=True),
-        sa.Column("year", sa.Integer, nullable=False),
-        sa.Column("month", sa.Integer, nullable=False),
-        sa.Column("day", sa.Integer, nullable=False),
+        sa.Column("year", sa.Integer, nullable=False, primary_key=True),
+        sa.Column("month", sa.Integer, nullable=False, primary_key=True),
+        sa.Column("day", sa.Integer, nullable=False, primary_key=True),
+        sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
         sa.Column("progress", sa.Float, nullable=False, default=0.0),
-        # Adding the unique constraint
-        sa.UniqueConstraint('user_id', 'challenge_id', 'year',
-                            'month', 'day', name='uix_user_challenge_date'),
-        # Adding the composite index
-        sa.Index('idx_year_month_day', 'year', 'month', 'day')
+        sa.Column("score_added", sa.Boolean, nullable=False, default=False)
     )
     pass
 

@@ -73,9 +73,9 @@ async def add_vote(
 
     await add_vote_(route_id, db, r, current_user)
 
-    return {"detail": {
+    return {"details": {
         "type": "voted",
-        "message": "Route Favourited"
+        "msg": "Route Favourited"
     }}
 
 
@@ -126,7 +126,7 @@ async def delete_vote(
 
     await remove_vote_(route_id, db, r, current_user)
 
-    return {"detail": {
+    return {"details": {
         "type": "unvoted",
-        "message": "Route Unfavourited"
+        "msg": "Route Unfavourited"
     }}

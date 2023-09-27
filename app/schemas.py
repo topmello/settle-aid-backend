@@ -1,6 +1,7 @@
-from pydantic import BaseModel, ValidationError, field_validator, constr, root_validator
+from pydantic import BaseModel, ValidationError, field_validator, root_validator, constr, conint
 from datetime import datetime
 from .models import Route
+from typing import Optional
 
 
 class UserCreate(BaseModel):
@@ -223,3 +224,41 @@ class VoteIn(BaseModel):
 
 class TrackRoomOut(BaseModel):
     room_id: str
+
+
+class Challenge(BaseModel):
+    name: str
+    type: str
+
+
+class UserChallengeOut(BaseModel):
+    challenge: Challenge
+    year: int
+    month: int
+    day: int
+    progress: float
+
+
+class DistanceTravelledChallenge(BaseModel):
+    steps: conint(ge=0, le=50000)
+
+
+class RouteGenerationChallenge(BaseModel):
+    routes_generated: int
+
+
+class RouteFavChallenge(BaseModel):
+    routes_favourited_shared: int
+
+
+class ChallengeScoreOut(BaseModel):
+    date: datetime
+    score: float
+    distance_travelled_score: Optional[float]
+    route_generation_score: Optional[float]
+    favourite_sharing_score: Optional[float]
+
+
+class LeaderboardOut(BaseModel):
+    user_id: int
+    score: float
