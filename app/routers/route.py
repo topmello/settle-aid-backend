@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy.orm import Session
-from sqlalchemy import func, case, desc
+from sqlalchemy import func, case
 import aioredis
-from datetime import datetime, timedelta
-from typing import List, Tuple, Dict
+from datetime import datetime
+from typing import List, Tuple
 import json
 from time import time, mktime
 
@@ -11,8 +11,6 @@ from .. import schemas, models, oauth2
 from ..database import get_db
 from ..redis import get_redis_feed_db, async_retry
 from ..limiter import limiter
-
-from ..common import templates
 
 
 from ..exceptions import UserNotFoundException, RouteNotFoundException, ParametersTooLargeException, NotAuthorisedException, InvalidSearchQueryException

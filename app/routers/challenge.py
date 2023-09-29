@@ -71,6 +71,20 @@ async def get_user_challenge(
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(oauth2.get_current_user)
 ):
+    """
+    Fetch the user's challenges created today.
+
+    This endpoint returns the challenges created today for a specified user.
+
+    Parameters:
+    - user_id (int): The ID of the user to fetch challenges for.
+    - db (Session): The database session, injected by FastAPI.
+    - current_user (schemas.User): The current authenticated user, injected by FastAPI.
+
+    Returns:
+    - List[schemas.UserChallengeOut]: A list of user challenges created today.
+    """
+
     if current_user.user_id != user_id:
         raise NotAuthorisedException()
     # Get the current date
@@ -92,6 +106,20 @@ async def get_user_challenge(
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(oauth2.get_current_user)
 ):
+    """
+    Fetch all challenges for a specified user.
+
+    This endpoint returns all the challenges for a specified user.
+
+    Parameters:
+    - user_id (int): The ID of the user to fetch challenges for.
+    - db (Session): The database session, injected by FastAPI.
+    - current_user (schemas.User): The current authenticated user, injected by FastAPI.
+
+    Returns:
+    - List[schemas.UserChallengeOut]: A list of all user challenges.
+    """
+
     if current_user.user_id != user_id:
         raise NotAuthorisedException()
 
@@ -113,6 +141,21 @@ async def calculate_weekly_score(
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(oauth2.get_current_user)
 ):
+    """
+    Calculate and fetch the weekly score for a specified user.
+
+    This endpoint calculates and returns the sum of scores for challenges with progress equal to 1, 
+    created in the past 7 days for a specified user, grouped by the date.
+
+    Parameters:
+    - user_id (int): The ID of the user to calculate the weekly score for.
+    - db (Session): The database session, injected by FastAPI.
+    - current_user (schemas.User): The current authenticated user, injected by FastAPI.
+
+    Returns:
+    - List[schemas.ChallengeScoreOut]: A list of challenge scores.
+    """
+
 
     if current_user.user_id != user_id:
         raise NotAuthorisedException()
@@ -170,6 +213,21 @@ async def calculate_weekly_score(
 
 @async_retry()
 async def update_score_in_redis(user_id: int, score: float, r: aioredis.Redis, db: Session):
+    """
+    Update user's score in Redis.
+
+    This asynchronous function updates the score of a specific user in Redis.
+
+    Parameters:
+    - user_id (int): The ID of the user whose score needs to be updated.
+    - score (float): The score to be updated in Redis.
+    - r (aioredis.Redis): The Redis instance.
+    - db (Session): The database session.
+
+    Raises:
+    - Any exceptions raised by the Redis operations will be handled by the async_retry decorator.
+    """
+
     # Get the current week number and year
     current_date = datetime.now()
     year, week_num = current_date.isocalendar()[0:2]
@@ -200,6 +258,25 @@ async def add_challenge_common(
         r: aioredis.Redis,
         current_user: schemas.User
 ):
+    """
+    Common function to add a challenge.
+
+    This function is used to add a challenge for a user, and updates the progress of the challenge.
+
+    Parameters:
+    - request (Request): The request object.
+    - user_id (int): The ID of the user to add the challenge for.
+    - challenge_data (schemas.DistanceTravelledChallenge): The challenge data.
+    - challenge_type (str): The type of the challenge.
+    - progress_calculator (Callable): The function to calculate the progress.
+    - db (Session): The database session.
+    - r (aioredis.Redis): The Redis instance.
+    - current_user (schemas.User): The current authenticated user.
+
+    Returns:
+    - dict: A dictionary containing details about the update status.
+    """
+
 
     if current_user.user_id != user_id:
         raise NotAuthorisedException()
@@ -257,6 +334,19 @@ async def add_challenge_common(
 
 
 def distance_travelled_calculator(challenge_data, challenge):
+    """
+    Calculate the progress for distance travelled challenge.
+
+    This function calculates the progress for the distance travelled challenge based on the steps and grade.
+
+    Parameters:
+    - challenge_data: The challenge data containing the steps.
+    - challenge: The challenge object.
+
+    Returns:
+    - float: The calculated progress.
+    """
+
     return challenge_data.steps / (challenge.grade * 5000)
 
 
@@ -269,6 +359,24 @@ async def add_challenge_distance_travelled(
         r: aioredis.Redis = Depends(get_redis_feed_db),
         current_user: schemas.User = Depends(oauth2.get_current_user)
 ):
+    """
+    Add distance travelled challenge.
+
+    This endpoint is used to add a distance travelled challenge for a specific user.
+
+    Parameters:
+    - request (Request): The request object.
+    - user_id (int): The ID of the user to add the challenge for.
+    - challenge_data (schemas.DistanceTravelledChallenge): The challenge data.
+    - db (Session): The database session, injected by FastAPI.
+    - r (aioredis.Redis): The Redis instance, injected by FastAPI.
+    - current_user (schemas.User): The current authenticated user, injected by FastAPI.
+
+    Returns:
+    - The response message.
+    """
+
+
     return await add_challenge_common(
         request,
         user_id,
@@ -282,6 +390,19 @@ async def add_challenge_distance_travelled(
 
 
 def route_generation_calculator(challenge_data: schemas.RouteGenerationChallenge, challenge):
+    """
+    Calculate the progress for route generation challenge.
+
+    This function calculates the progress for the route generation challenge based on the routes generated and grade.
+
+    Parameters:
+    - challenge_data (schemas.RouteGenerationChallenge): The challenge data containing the routes generated.
+    - challenge: The challenge object.
+
+    Returns:
+    - float: The calculated progress.
+    """
+
 
     progress = 0
 
@@ -304,6 +425,23 @@ async def add_challenge_route_generation(
         r: aioredis.Redis = Depends(get_redis_feed_db),
         current_user: schemas.User = Depends(oauth2.get_current_user)
 ):
+    """
+    Add route generation challenge.
+
+    This endpoint is used to add a route generation challenge for a specific user.
+
+    Parameters:
+    - request (Request): The request object.
+    - user_id (int): The ID of the user to add the challenge for.
+    - challenge_data (schemas.RouteGenerationChallenge): The challenge data.
+    - db (Session): The database session, injected by FastAPI.
+    - r (aioredis.Redis): The Redis instance, injected by FastAPI.
+    - current_user (schemas.User): The current authenticated user, injected by FastAPI.
+
+    Returns:
+    - The response message.
+    """
+
     return await add_challenge_common(
         request,
         user_id,
@@ -317,6 +455,19 @@ async def add_challenge_route_generation(
 
 
 def favourite_sharing_calculator(challenge_data: schemas.RouteFavChallenge, challenge):
+    """
+    Calculate the progress for favourite sharing challenge.
+
+    This function calculates the progress for the favourite sharing challenge based on the routes favourited/shared and grade.
+
+    Parameters:
+    - challenge_data (schemas.RouteFavChallenge): The challenge data containing the routes favourited/shared.
+    - challenge: The challenge object.
+
+    Returns:
+    - float: The calculated progress.
+    """
+
 
     progress = 0
 
@@ -339,6 +490,23 @@ async def add_challenge_favourite_sharing(
         r: aioredis.Redis = Depends(get_redis_feed_db),
         current_user: schemas.User = Depends(oauth2.get_current_user)
 ):
+    """
+    Add favourite sharing challenge.
+
+    This endpoint is used to add a favourite sharing challenge for a specific user.
+
+    Parameters:
+    - request (Request): The request object.
+    - user_id (int): The ID of the user to add the challenge for.
+    - challenge_data (schemas.RouteFavChallenge): The challenge data.
+    - db (Session): The database session, injected by FastAPI.
+    - r (aioredis.Redis): The Redis instance, injected by FastAPI.
+    - current_user (schemas.User): The current authenticated user, injected by FastAPI.
+
+    Returns:
+    - The response message.
+    """
+
 
     return await add_challenge_common(
         request,
