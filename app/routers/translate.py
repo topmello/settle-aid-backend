@@ -1,7 +1,6 @@
-from fastapi import APIRouter, Depends, Request
-from fastapi.responses import HTMLResponse
+from fastapi import APIRouter, Request
 
-from .. import models, schemas, oauth2, translation
+from .. import schemas, translation
 
 
 router = APIRouter(
@@ -19,13 +18,18 @@ async def translate(
     Translate a list of texts based on the provided query.
 
     Args:
-    - query (schemas.TranslateQuery): The translation query containing the list of texts to be translated.
+    - query (schemas.TranslateQuery):
+      The translation query containing the list of texts to be translated.
 
     Raises:
-    - None: This function does not explicitly raise any exceptions, but internal methods or dependencies might raise exceptions if any issues occur.
+    - None:
+      This function does not explicitly raise any exceptions,
+      but internal methods or dependencies might raise exceptions
+      if any issues occur.
 
     Returns:
-    - schemas.TranslateRes: The translated results corresponding to the input texts.
+    - schemas.TranslateRes:
+      The translated results corresponding to the input texts.
 
     """
 

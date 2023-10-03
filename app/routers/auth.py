@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, Request, Response
-from datetime import datetime, timedelta
+from datetime import datetime
 from sqlalchemy.orm import Session
-from jose import jwt
 import json
 import aioredis
 import asyncio
@@ -9,7 +8,6 @@ import asyncio
 from ..common import templates
 from ..database import get_db
 from ..redis import get_redis_refresh_token_db
-from ..config import settings
 from ..limiter import limiter
 
 from .. import models, schemas, oauth2
@@ -45,7 +43,7 @@ async def login(
     # user_credentials contains username and password
     user_query = db.query(models.User).filter(
         models.User.username == user_credentials.username)
-    if user_query.first() == None:
+    if user_query.first() is None:
         raise UserNotFoundException()
     if not verify(user_credentials.password, user_query.first().password):
         raise InvalidCredentialsException()
