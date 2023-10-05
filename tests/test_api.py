@@ -11,7 +11,7 @@ from app.main import app  # noqa
 import scripts.insert_data  # noqa
 from alembic import command  # noqa
 from alembic.config import Config  # noqa
-
+from datetime import datetime  # noqa
 
 client = TestClient(app)
 alembic_config = Config("alembic.ini")
@@ -239,3 +239,78 @@ def test_vote(test_client):
         headers=headers)
 
     assert res.status_code == 404
+
+
+def test_challenge(test_client):
+    res = test_client.post(
+        "/login/v2/", json={"username": "test", "password": "test1234"})
+    assert res.status_code == 200
+
+    user_id = res.json()["user_id"]
+    token = res.json()["access_token"]
+
+    headers = {"Authorization": f"Bearer {token}"}
+    time.sleep(2)
+    res = test_client.post(
+        f"/challenge/distance_travelled/{user_id}",
+        headers=headers,
+        json={"steps": 10000}
+    )
+    assert res.status_code == 201
+
+    res = test_client.post(
+        f"/challenge/route_generation/{user_id}",
+        headers=headers,
+        json={"routes_generated": 5}
+    )
+    assert res.status_code == 201
+    res = test_client.post(
+        f"/challenge/favourite_sharing/{user_id}",
+        headers=headers,
+        json={"routes_favourited_shared": 15}
+    )
+    assert res.status_code == 201
+
+    res = test_client.get(
+        f"challenge/all/{user_id}",
+        headers=headers
+    )
+
+    today = datetime.now().date()
+    today_challenges = [
+        challenge for challenge in res.json()
+        if challenge["year"] == today.year
+        and challenge["month"] == today.month
+        and challenge["day"] == today.day
+    ]
+
+    for challenge in today_challenges:
+        assert 0 <= challenge["progress"] <= 1
+
+    ten_thousand_steps_challenge = next(
+        (
+            challenge for challenge in today_challenges
+            if challenge["challenge"]["name"] == "10,000 steps"
+        ),
+        None
+    )
+    if ten_thousand_steps_challenge:
+        assert ten_thousand_steps_challenge["progress"] == 1.0
+
+    five_routes_challenge = next(
+        (challenge for challenge in today_challenges if challenge["challenge"]
+         ["name"] == "5 routes generated"),
+        None
+    )
+
+    if five_routes_challenge:
+        assert five_routes_challenge["progress"] == 1.0
+
+    fifteen_routes_challenge = next(
+        (challenge for challenge in today_challenges if challenge["challenge"]
+         ["name"] == "10 routes favourited/shared"),
+        None
+    )
+
+    if fifteen_routes_challenge:
+        assert fifteen_routes_challenge["progress"] == 1.0

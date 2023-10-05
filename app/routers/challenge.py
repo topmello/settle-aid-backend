@@ -46,7 +46,9 @@ async def get_leaderboard_(
 async def get_leaderboard(
         request: Request,
         limit: int = Query(
-            10, gt=0, le=100, description="The number of top users to fetch. Default is 10."),
+            10, gt=0, le=100,
+            description="The number of top users to fetch. Default is 10."
+        ),
         r: aioredis.Redis = Depends(get_redis_feed_db)):
     """
     Fetch the leaderboard.
@@ -155,7 +157,6 @@ async def calculate_weekly_score(
     Returns:
     - List[schemas.ChallengeScoreOut]: A list of challenge scores.
     """
-
 
     if current_user.user_id != user_id:
         raise NotAuthorisedException()
@@ -277,7 +278,6 @@ async def add_challenge_common(
     - dict: A dictionary containing details about the update status.
     """
 
-
     if current_user.user_id != user_id:
         raise NotAuthorisedException()
 
@@ -318,7 +318,7 @@ async def add_challenge_common(
         db.commit()
         db.refresh(user_challenge)
 
-        # If the progress is 1, and score is not added yet, update the score in Redis
+        # If the progress is 1, and score is not added, update score in Redis
         if progress == 1.0 and not user_challenge.score_added:
             # Use the score from the challenge
             await update_score_in_redis(user_id, challenge.score, r, db)
@@ -376,7 +376,6 @@ async def add_challenge_distance_travelled(
     - The response message.
     """
 
-
     return await add_challenge_common(
         request,
         user_id,
@@ -402,7 +401,6 @@ def route_generation_calculator(challenge_data: schemas.RouteGenerationChallenge
     Returns:
     - float: The calculated progress.
     """
-
 
     progress = 0
 
@@ -468,7 +466,6 @@ def favourite_sharing_calculator(challenge_data: schemas.RouteFavChallenge, chal
     - float: The calculated progress.
     """
 
-
     progress = 0
 
     if challenge.grade == 1:
@@ -506,7 +503,6 @@ async def add_challenge_favourite_sharing(
     Returns:
     - The response message.
     """
-
 
     return await add_challenge_common(
         request,
