@@ -52,14 +52,10 @@ async def get_route_from_redis_or_db(
             .first()
         )
 
-        print(route_obj.route_id)
-        print(route_obj.image.route_image_name)
         if route_obj is None:
             return None
 
-        print("TEST")
         route_obj = schemas.RouteOutV3.from_orm(route_obj)
-        print("DONE")
 
         # Store in Redis for future use
         # 1 hour expiration
@@ -105,7 +101,6 @@ async def get_route_(
         r: aioredis.Redis,
 ):
     route_obj = await get_route_from_redis_or_db(route_id, r, db)
-    print("HELLOOOOO")
     if not route_obj:
         raise RouteNotFoundException()
 
