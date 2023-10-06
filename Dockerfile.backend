@@ -21,16 +21,14 @@ COPY . .
 RUN chown -R myuser:myuser /usr/src/app && \
     mkdir -p /usr/src/app/.pytest_cache && \
     chown -R myuser:myuser /usr/src/app/.pytest_cache && \
+    mkdir -p /usr/src/app/transformers_cache && \
+    chown -R myuser:myuser /usr/src/app/transformers_cache && \
     mkdir -p /home/myuser/.cache/torch/sentence_transformers && \
-    chown -R myuser:myuser /home/myuser/.cache && \
-    mkdir -p /home/myuser/transformers_cache && \
-    chown -R myuser:myuser /home/myuser/transformers_cache
+    chown -R myuser:myuser /home/myuser/.cache
 
 # Switch to 'myuser'
 USER myuser
 
-# Set the TRANSFORMERS_CACHE environment variable
-ENV TRANSFORMERS_CACHE=/home/myuser/transformers_cache
 
 # Set the default command for the container
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "80"]
