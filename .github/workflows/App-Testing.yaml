@@ -14,10 +14,18 @@ jobs:
 
       - name: Build the Docker images
         run: docker-compose -f docker-compose-dev.yaml up -d --build
-
+      
       - name: Check Directory Permissions
         run: docker exec backend ls -la /usr/src/app
 
+      - name: Set permissions for .pytest_cache and transformers_cache
+        run: |
+          docker exec -u root backend chmod 775 /usr/src/app/.pytest_cache
+          docker exec -u root backend chmod 775 /usr/src/app/transformers_cache
+      
+      - name: Check Directory Permissions
+        run: docker exec backend ls -la /usr/src/app
+            
       - name: Run pytest
         run: docker exec backend pytest
 
