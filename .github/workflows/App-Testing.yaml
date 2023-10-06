@@ -15,20 +15,6 @@ jobs:
       - name: Build the Docker images
         run: docker-compose -f docker-compose-dev.yaml up -d --build
 
-      - name: Create directories and set permissions inside Docker container
-        run: |
-          docker exec backend mkdir -p /usr/src/app/.pytest_cache
-          docker exec backend chmod 777 /usr/src/app/.pytest_cache
-          docker exec backend chown 1001:127 /usr/src/app/.pytest_cache
-
-          docker exec backend mkdir -p /usr/src/app/transformers_cache
-          docker exec backend chmod 777 /usr/src/app/transformers_cache
-          docker exec backend chown 1001:127 /usr/src/app/transformers_cache
-
-          docker exec backend mkdir -p /home/myuser/.cache/torch/sentence_transformers
-          docker exec backend chmod 777 /home/myuser/.cache/torch/sentence_transformers
-          docker exec backend chown 1001:127 /home/myuser/.cache/torch/sentence_transformers
-
       - name: Check Directory Permissions
         run: docker exec backend ls -la /usr/src/app
 
