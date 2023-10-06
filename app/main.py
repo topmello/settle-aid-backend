@@ -4,19 +4,52 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.openapi.utils import get_openapi
 import aioredis
-
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
-from .routers import auth, user, search, translate, track_sio, track, vote, route, challenge, ui
+from .routers import (
+    auth,
+    user,
+    search,
+    translate,
+    track_sio,
+    track,
+    vote,
+    route,
+    challenge,
+    ui
+)
 from .limiter import limiter
 
 from fastapi.exceptions import RequestValidationError
-from .exceptions import *
-from .exception_handlers import custom_exception_handler, ratelimit_exception_handler, validation_exception_handler
+from .exceptions import (
+    InvalidCredentialsException,
+    UserNotFoundException,
+    InvalidRefreshTokenException,
+    UserAlreadyExistsException,
+    NotAuthorisedException,
+    LocationNotFoundException,
+    InvalidSearchQueryException,
+    RouteNotFoundException,
+    ParametersTooLargeException,
+    AlreadyVotedException,
+    VoteNotFoundException,
+)
+from .exception_handlers import (
+    custom_exception_handler,
+    ratelimit_exception_handler,
+    validation_exception_handler
+)
 
-from .loggings import LoggingMiddleware, get_logs_ui_, logs_stream_, get_redis_logs_db
-from .common import templates, get_current_username_doc
+from .loggings import (
+    LoggingMiddleware,
+    get_logs_ui_,
+    logs_stream_,
+    get_redis_logs_db
+)
+from .common import get_current_username_doc
+from .huggingface_models import embedding_model, get_similar_image
+
 
 description = """
 ## UI 🖥️
@@ -136,12 +169,17 @@ async def startup_event():
     """Startup event"""
     print("Starting up...")
     prompt = "Hello World"
-    embed = search.model.encode([prompt])
+    embed = embedding_model.encode([prompt])
+
+    images = get_similar_image(text="Melbourne", location_type='landmark')
+
     pass
 
 
 @app.get("/", include_in_schema=False)
-async def get_swagger_documentation(username: str = Depends(get_current_username_doc)):
+async def get_swagger_documentation(
+    username: str = Depends(get_current_username_doc)
+):
     return get_swagger_ui_html(openapi_url="/openapi.json", title="docs")
 
 
@@ -156,10 +194,16 @@ async def openapi(username: str = Depends(get_current_username_doc)):
 
 
 @app.get("/logs", include_in_schema=False)
-async def get_logs_ui(request: Request, r: aioredis.Redis = Depends(get_redis_logs_db), username: str = Depends(get_current_username_doc)):
+async def get_logs_ui(
+    request: Request,
+    r: aioredis.Redis = Depends(get_redis_logs_db),
+    username: str = Depends(get_current_username_doc)
+):
     return await get_logs_ui_(request, r)
 
 
 @app.get("/logs/stream/", include_in_schema=False)
-async def logs_stream(r: aioredis.Redis = Depends(get_redis_logs_db), username: str = Depends(get_current_username_doc)):
+async def logs_stream(
+        r: aioredis.Redis = Depends(get_redis_logs_db),
+        username: str = Depends(get_current_username_doc)):
     return await logs_stream_(r)

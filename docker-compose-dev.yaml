@@ -34,7 +34,8 @@ services:
       - "8000:8000"
     volumes:
       - ./:/usr/src/app
-      - models_volume:/home/myuser/.cache/torch/sentence_transformers/
+      - embeddings_models_volume:/home/myuser/.cache/torch/sentence_transformers/
+      - clip_models_volume:/home/myuser/.cache/torch/transformers/
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     environment:
       - DATABASE_HOSTNAME=db
@@ -87,5 +88,6 @@ services:
 volumes:
   database_volume:
   redis_volume:
-  models_volume:
+  embeddings_models_volume:
+  clip_models_volume:
   dbbackups_volume:

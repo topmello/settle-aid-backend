@@ -1,3 +1,5 @@
 venv/
 .pytest_cache/
 __pycache__/
+transformers_cache/
+.DS_Store

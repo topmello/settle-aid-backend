@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Request, Response
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, case
 import aioredis
 from datetime import datetime
@@ -13,7 +13,13 @@ from ..redis import get_redis_feed_db, async_retry
 from ..limiter import limiter
 
 
-from ..exceptions import UserNotFoundException, RouteNotFoundException, ParametersTooLargeException, NotAuthorisedException, InvalidSearchQueryException
+from ..exceptions import (
+    UserNotFoundException,
+    RouteNotFoundException,
+    ParametersTooLargeException,
+    NotAuthorisedException,
+    InvalidSearchQueryException
+)
 
 router = APIRouter(
     prefix='/route',
@@ -27,32 +33,48 @@ def datetime_serializer(o):
     raise TypeError("Object not serializable")
 
 
-async def get_route_from_redis_or_db(route_id, r: aioredis.Redis, db: Session) -> schemas.RouteOutV2:
+async def get_route_from_redis_or_db(
+        route_id, r: aioredis.Redis,
+        db: Session) -> schemas.RouteOutV3:
     # Try fetching route from Redis first
     route_data = await r.get(f"route_details_{route_id}")
 
     if route_data:
         # If found in Redis, deserialize it to a Python object
         route_obj = json.loads(route_data)
-        route_obj = schemas.RouteOutV2(**route_obj)
+        route_obj = schemas.RouteOutV3(**route_obj)
     else:
         # If not found in Redis, fetch from the DB
-        route_obj = db.query(models.Route).filter(
-            models.Route.route_id == route_id).first()
+        route_obj = (
+            db.query(models.Route)
+            .options(joinedload(models.Route.image))
+            .filter(models.Route.route_id == route_id)
+            .first()
+        )
+
+        print(route_obj.route_id)
+        print(route_obj.image.route_image_name)
         if route_obj is None:
             return None
-        route_obj = schemas.RouteOutV2.from_orm(route_obj)
+
+        print("TEST")
+        route_obj = schemas.RouteOutV3.from_orm(route_obj)
+        print("DONE")
 
         # Store in Redis for future use
         # 1 hour expiration
-        await r.set(f"route_details_{route_id}", json.dumps(route_obj.model_dump(), default=datetime_serializer), ex=3600)
+        await r.set(
+            f"route_details_{route_id}",
+            json.dumps(route_obj.model_dump(), default=datetime_serializer),
+            ex=3600)
 
     return route_obj
 
 
 def merge_route_details(
-        route_objects: List[schemas.RouteOutV2],
-        vote_details: List[Tuple[int, int, bool]]) -> List[schemas.RouteVoteOutUser]:
+    route_objects: List[schemas.RouteOutV3],
+    vote_details: List[Tuple[int, int, bool]]
+) -> List[schemas.RouteVoteOutUser]:
     """
     Merge route objects with their vote details.
     """
@@ -83,7 +105,7 @@ async def get_route_(
         r: aioredis.Redis,
 ):
     route_obj = await get_route_from_redis_or_db(route_id, r, db)
-
+    print("HELLOOOOO")
     if not route_obj:
         raise RouteNotFoundException()
 
@@ -138,8 +160,10 @@ async def delete_route(
     - route_id (int): The ID of the route to delete.
 
     Raises:
-    - RouteNotFoundException: If no route is found with the specified ID.
-    - PermissionDeniedException: If the route does not belong to the current user.
+    - RouteNotFoundException:
+      If no route is found with the specified ID.
+    - PermissionDeniedException:
+      If the route does not belong to the current user.
     """
 
     route_query = db.query(models.Route).filter(
@@ -179,7 +203,9 @@ async def get_routes_(
     if limit > 50:
         raise ParametersTooLargeException()
 
-    if db.query(models.User).filter(models.User.user_id == user_id).first() is None:
+    if db.query(models.User).filter(
+        models.User.user_id == user_id
+    ).first() is None:
         raise UserNotFoundException()
 
     if query_type == 'all':
@@ -196,7 +222,10 @@ async def get_routes_(
         route_ids = (
             db.query(models.User_Route_Vote.route_id)
             .filter(models.User_Route_Vote.user_id == user_id)
-            .join(models.Route, models.Route.route_id == models.User_Route_Vote.route_id)
+            .join(
+                models.Route,
+                models.Route.route_id == models.User_Route_Vote.route_id
+            )
             .filter(models.Route.created_by_user_id == user_id)
             .order_by(models.Route.created_at.desc())
             .offset(offset)
@@ -207,7 +236,10 @@ async def get_routes_(
         route_ids = (
             db.query(models.User_Route_Vote.route_id)
             .filter(models.User_Route_Vote.user_id == user_id)
-            .join(models.Route, models.Route.route_id == models.User_Route_Vote.route_id)
+            .join(
+                models.Route,
+                models.Route.route_id == models.User_Route_Vote.route_id
+            )
             .order_by(models.Route.created_at.desc())
             .offset(offset)
             .limit(limit)
@@ -255,7 +287,7 @@ async def get_routes_(
 
 @router.get('/user/{user_id}/', response_model=list[schemas.RouteVoteOutUser])
 @limiter.limit("5/second")
-async def get_routes(
+async def get_routes_user(
         request: Request, user_id: int,
         offset: int = 0,
         limit: int = 10,
@@ -275,15 +307,19 @@ async def get_routes(
     - RouteNotFoundException: If no routes are found.
 
     Returns:
-    - List[schemas.RouteVoteOut]: A list of routes and their respective vote counts.
+    - List[schemas.RouteVoteOut]:
+      A list of routes and their respective vote counts.
     """
 
-    return await get_routes_('all', user_id, offset, limit, db, r, current_user)
+    return await get_routes_(
+        'all', user_id, offset, limit, db, r, current_user
+    )
 
 
-@router.get('/user/fav/{user_id}/', response_model=list[schemas.RouteVoteOutUser])
+@router.get('/user/fav/{user_id}/',
+            response_model=list[schemas.RouteVoteOutUser])
 @limiter.limit("5/second")
-async def get_routes(
+async def get_routes_user_fav(
         request: Request, user_id: int,
         offset: int = 0,
         limit: int = 10,
@@ -294,8 +330,10 @@ async def get_routes(
     Retrieve a list of favorite routes created by a specified user.
 
     Args:
-    - user_id (int): The ID of the user whose favorite routes are to be retrieved.
-    - limit (int): The maximum number of favorite routes to retrieve. Defaults to 10.
+    - user_id (int):
+      The ID of the user whose favorite routes are to be retrieved.
+    - limit (int):
+      The maximum number of favorite routes to retrieve. Defaults to 10.
 
     Raises:
     - ParametersTooLargeException: If the limit specified exceeds 50.
@@ -303,13 +341,17 @@ async def get_routes(
     - RouteNotFoundException: If no routes are found.
 
     Returns:
-    - List[schemas.RouteVoteOut]: A list of favorite routes and their respective vote counts.
+    - List[schemas.RouteVoteOut]:
+      A list of favorite routes and their respective vote counts.
     """
 
-    return await get_routes_('fav', user_id, offset, limit, db, r, current_user)
+    return await get_routes_(
+        'fav', user_id, offset, limit, db, r, current_user
+    )
 
 
-@router.get('/feed/user/fav/{user_id}/', response_model=list[schemas.RouteVoteOutUser])
+@router.get('/feed/user/fav/{user_id}/',
+            response_model=list[schemas.RouteVoteOutUser])
 @limiter.limit("5/second")
 async def get_routes(
         request: Request, user_id: int,
@@ -322,8 +364,10 @@ async def get_routes(
     Retrieve a list of routes favorited by a specified user.
 
     Args:
-    - user_id (int): The ID of the user whose favorite routes are to be retrieved.
-    - limit (int): The maximum number of favorite routes to retrieve. Defaults to 10.
+    - user_id (int):
+      The ID of the user whose favorite routes are to be retrieved.
+    - limit (int):
+      The maximum number of favorite routes to retrieve. Defaults to 10.
 
     Raises:
     - ParametersTooLargeException: If the limit specified exceeds 50.
@@ -331,14 +375,20 @@ async def get_routes(
     - RouteNotFoundException: If no routes are found.
 
     Returns:
-    - List[schemas.RouteVoteOut]: A list of favorite routes and their respective vote counts.
+    - List[schemas.RouteVoteOut]:
+      A list of favorite routes and their respective vote counts.
     """
 
-    return await get_routes_('feed_fav', user_id, offset, limit, db, r, current_user)
+    return await get_routes_(
+        'feed_fav', user_id, offset, limit, db, r, current_user
+    )
 
 
 @async_retry()
-async def publish_route_in_redis(route_id: int, r: aioredis.Redis, db: Session):
+async def publish_route_in_redis(
+        route_id: int,
+        r: aioredis.Redis,
+        db: Session):
 
     # Assume the epoch time is January 1, 2022
     epoch_time = mktime((2022, 1, 1, 0, 0, 0, 0, 0, 0))
@@ -379,7 +429,9 @@ async def publish_route_(
         current_user: schemas.User
 ):
     # Check if route exists
-    if db.query(models.Route).filter(models.Route.route_id == route_id).first() is None:
+    if db.query(models.Route).filter(
+        models.Route.route_id == route_id
+    ).first() is None:
         raise RouteNotFoundException()
 
     # Check if the route belongs to the current user
@@ -402,9 +454,11 @@ async def publish_route(
     """
     Publish a specified route to the public feed.
 
-    This endpoint allows users to make their route publicly available on the feed.
-    It first checks if the specified route exists in the database and if the 
-    authenticated user is the author of that route. After these validations, the route 
+    This endpoint allows users
+    to make their route publicly available on the feed.
+    It first checks if the specified route exists in the database
+    and if the authenticated user is the author of that route.
+    After these validations, the route
     is published to the Redis feed.
 
     Parameters:
@@ -412,14 +466,17 @@ async def publish_route(
     - route_id (int): The unique identifier of the route to be published.
     - db (Session): The database session, injected by FastAPI.
     - r (aioredis.Redis): The Redis instance for feeds, injected by FastAPI.
-    - current_user (schemas.User): The current authenticated user, injected by FastAPI.
+    - current_user (schemas.User):
+      The current authenticated user, injected by FastAPI.
 
     Returns:
     - dict: A dictionary containing details about the publishing status.
 
     Raises:
-    - RouteNotFoundException: If the specified route does not exist in the database.
-    - NotAuthorisedException: If the authenticated user is not the author of the specified route.
+    - RouteNotFoundException:
+      If the specified route does not exist in the database.
+    - NotAuthorisedException:
+      If the authenticated user is not the author of the specified route.
     """
     # Check if route exists
     await publish_route_(route_id, db, r, current_user)
@@ -430,7 +487,14 @@ async def publish_route(
     }}
 
 
-async def fetch_top_routes(order_by: str, offset: int, limit: int, r: aioredis.Redis, db: Session, current_user: schemas.User):
+async def fetch_top_routes(
+    order_by: str,
+    offset: int,
+    limit: int,
+    r: aioredis.Redis,
+    db: Session,
+    current_user: schemas.User
+):
 
     await cleanup_expired_routes(r)
 
@@ -439,10 +503,19 @@ async def fetch_top_routes(order_by: str, offset: int, limit: int, r: aioredis.R
         raise InvalidSearchQueryException()
 
     # Fetch top routes from Redis
-    route_ids_with_votes = await r.zrevrange('routes_feed', offset, offset+limit-1, withscores=True)
+    route_ids_with_votes = await r.zrevrange(
+        'routes_feed',
+        offset,
+        offset+limit-1,
+        withscores=True
+    )
     route_ids = [route[0] for route in route_ids_with_votes]
 
-    route_objects = [await get_route_from_redis_or_db(route_id, r, db) for route_id in route_ids]
+    route_objects = [
+        await get_route_from_redis_or_db(
+            route_id, r, db
+        ) for route_id in route_ids
+    ]
 
     # Query DB for route details based on IDs
     vote_details = (
@@ -475,26 +548,35 @@ async def get_top_routes(
     """
     Get top routes based on the provided criteria and order.
 
-    This endpoint returns the top routes either by creation date or votes, 
-    depending on the order_by parameter. Before fetching, it cleans up expired routes. 
-    It first fetches the route IDs from Redis, followed by a detailed query on the 
-    database for more information on each route, including the number of votes and 
+    This endpoint returns the top routes either by creation date or votes,
+    depending on the order_by parameter.
+    Before fetching, it cleans up expired routes.
+    It first fetches the route IDs from Redis,
+    followed by a detailed query on the
+    database for more information on each route,
+    including the number of votes and
     whether the current user has voted on it.
 
     Parameters:
     - request (Request): The request object.
-    - order_by (str, optional): The ordering criterion. Can be either 'created_at' or 'num_votes'. Defaults to 'num_votes'.
-    - limit (int, optional): The maximum number of routes to return. Defaults to 10.
+    - order_by (str, optional):
+      The ordering criterion.
+      Can be either 'created_at' or 'num_votes'. Defaults to 'num_votes'.
+    - limit (int, optional):
+      The maximum number of routes to return. Defaults to 10.
     - offset (int, optional): The offset for pagination. Defaults to 0.
     - r (aioredis.Redis): The Redis instance for feeds, injected by FastAPI.
     - db (Session): The database session, injected by FastAPI.
-    - current_user (schemas.User): The current authenticated user, injected by FastAPI.
+    - current_user (schemas.User):
+      The current authenticated user, injected by FastAPI.
 
     Returns:
-    - list[schemas.RouteVoteOutUser]: A list of top routes with their associated vote details.
+    - list[schemas.RouteVoteOutUser]:
+      A list of top routes with their associated vote details.
 
     Raises:
-    - InvalidSearchQueryException: If the order_by parameter is not in the allowed options.
+    - InvalidSearchQueryException:
+      If the order_by parameter is not in the allowed options.
     """
 
     return await fetch_top_routes(order_by, offset, limit, r, db, current_user)

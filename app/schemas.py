@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ValidationError, field_validator, root_validator, constr, conint
+from pydantic import BaseModel, ValidationError, field_validator, constr, conint
 from datetime import datetime
 from .models import Route
 from typing import Optional
@@ -91,13 +91,42 @@ class RouteOutV2(BaseModel):
         )
 
 
+class RouteOutV3(RouteOutV2):
+    route_image_name: str
+
+    @classmethod
+    def from_orm(cls, route: Route) -> "RouteOutV3":
+        locations_coordinates = [
+            {"latitude": lat, "longitude": lon}
+            for lat, lon in zip(route.location_latitudes, route.location_longitudes)
+        ]
+
+        route_coordinates = [
+            {"latitude": lat, "longitude": lon}
+            for lat, lon in zip(route.route_latitudes, route.route_longitudes)
+        ]
+
+        route_image_name = route.image.route_image_name if route.image else ''
+
+        return cls(
+            route_id=route.route_id,
+            locations=route.locations,
+            locations_coordinates=locations_coordinates,
+            route=route_coordinates,
+            instructions=route.instructions,
+            duration=route.duration,
+            created_at=route.created_at,
+            route_image_name=route_image_name
+        )
+
+
 class RouteVoteOut(BaseModel):
-    route: RouteOutV2
+    route: RouteOutV3
     num_votes: int
 
 
 class RouteVoteOutUser(BaseModel):
-    route: RouteOutV2
+    route: RouteOutV3
     num_votes: int
     voted_by_user: bool
 

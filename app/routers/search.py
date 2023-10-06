@@ -1,18 +1,13 @@
 from fastapi import APIRouter, Depends, Request
 
 
-from sqlalchemy import select, desc, func, text
+from sqlalchemy import desc, func
 from sqlalchemy.orm import Session
 from geoalchemy2 import WKTElement
 
-from fastapi.responses import HTMLResponse
-import folium
-import tempfile
-from pathlib import Path
 import numpy as np
-
-from sentence_transformers import SentenceTransformer
-
+import random
+from ..huggingface_models import embedding_model, get_similar_image
 from ..database import get_db
 
 
@@ -29,7 +24,6 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
 
 # Dictionary mapping location types to models
 LOCATION_TYPE_MODELS = {
@@ -64,14 +58,18 @@ async def search_by_query_seq(
     Search for a route based on user queries and the current location.
 
     Args:
-    - querys (schemas.RouteQuery): The user query data containing location type, latitude, longitude, distance threshold, similarity threshold, and route type.
+    - querys (schemas.RouteQuery): The user query data containing
+      location type, latitude, longitude, distance threshold,
+      similarity threshold, and route type.
     - Logged in required: The user must be logged in to search for a route.
 
     Raises:
-    - LocationNotFoundException: If no matching location is found for a given query.
+    - LocationNotFoundException:
+      If no matching location is found for a given query.
 
     Returns:
-    - schemas.RouteOut: The resulting route including locations, route coordinates, instructions, and duration.
+    - schemas.RouteOut: The resulting route including
+      locations, route coordinates, instructions, and duration.
     """
 
     results = []
@@ -90,7 +88,7 @@ async def search_by_query_seq(
         f'POINT({querys.longitude} {querys.latitude})', srid=4326)
 
     for i, query in enumerate(querys.query):
-        query_embeding = model.encode([query])[0]
+        query_embeding = embedding_model.encode([query])[0]
 
         # Dynamically get the correct model based on location type
         Model = LOCATION_TYPE_MODELS.get(querys.location_type[i])
@@ -104,13 +102,17 @@ async def search_by_query_seq(
                 Model.name.label('name'),
                 func.st_y(Model.coord).label('latitude'),
                 func.st_x(Model.coord).label('longitude'),
-                (1-Model.embedding.cosine_distance(query_embeding)).label('similarity')
+                (
+                    1-Model.embedding.cosine_distance(query_embeding)
+                ).label('similarity')
             )
             .filter(func.ST_Distance(
                 func.ST_Transform(Model.coord, 3857),
                 func.ST_Transform(current_location, 3857)
             ) < querys.distance_threshold)
-            .filter((1-Model.embedding.cosine_distance(query_embeding)) > querys.similarity_threshold)
+            .filter(
+                (1-Model.embedding.cosine_distance(query_embeding)
+                 ) > querys.similarity_threshold)
             # Exclude places already seen
             .filter(Model.name.notin_(seen_places))
             .order_by(desc('similarity'))
@@ -129,8 +131,13 @@ async def search_by_query_seq(
             chosen_location = locations[chosen_idx]
 
             results.append(chosen_location)
+
+            currect_long = chosen_location.longitude
+            current_lat = chosen_location.latitude
             current_location = WKTElement(
-                f'POINT({chosen_location.longitude} {chosen_location.latitude})', srid=4326)
+                f'POINT({currect_long} {current_lat})',
+                srid=4326
+            )
             seen_places.add(chosen_location.name)
 
         else:
@@ -188,20 +195,28 @@ async def search_by_query_seq_v2_(
         db: Session,
         current_user: schemas.User):
     """
-    Search for a route based on user queries, negative queries, and the current location (Version 2).
+    Search for a route based on user queries,
+    negative queries, and the current location (Version 2).
 
-    This endpoint allows users to provide negative queries to exclude certain results.
+    This endpoint allows users to provide negative queries
+    to exclude certain results.
 
     Args:
-    - querys (schemas.RouteQueryV2): The user query data including location type, latitude, longitude, distance threshold, similarity threshold, negative query, negative similarity threshold, and route type.
+    - querys (schemas.RouteQueryV2): The user query data including
+      location type, latitude, longitude, distance threshold,
+      similarity threshold, negative query, negative similarity threshold,
+      and route type.
     - Logged in required: The user must be logged in to search for a route.
 
     Raises:
-    - LocationNotFoundException: If no matching location is found for a given query.
-    - InvalidSearchQueryException: If the provided queries are inconsistent in length or type.
+    - LocationNotFoundException:
+      If no matching location is found for a given query.
+    - InvalidSearchQueryException:
+      If the provided queries are inconsistent in length or type.
 
     Returns:
-    - schemas.RouteOutV2: The resulting route including route ID, locations, route coordinates, instructions, and duration.
+    - schemas.RouteOutV2: The resulting route including
+      route ID, locations, route coordinates, instructions, and duration.
     """
 
     if querys.negative_query is None:
@@ -229,8 +244,9 @@ async def search_by_query_seq_v2_(
         f'POINT({querys.longitude} {querys.latitude})', srid=4326)
 
     for i, query in enumerate(querys.query):
-        query_embeding = model.encode([query])[0]
-        negative_query_embeding = model.encode([querys.negative_query[i]])[0]
+        query_embeding = embedding_model.encode([query])[0]
+        negative_query_embeding = embedding_model.encode(
+            [querys.negative_query[i]])[0]
 
         # Dynamically get the correct model based on location type
         Model = LOCATION_TYPE_MODELS.get(querys.location_type[i])
@@ -244,14 +260,20 @@ async def search_by_query_seq_v2_(
                 Model.name.label('name'),
                 func.st_y(Model.coord).label('latitude'),
                 func.st_x(Model.coord).label('longitude'),
-                (1-Model.embedding.cosine_distance(query_embeding)).label('similarity')
+                (
+                    1-Model.embedding.cosine_distance(query_embeding)
+                ).label('similarity')
             )
             .filter(func.ST_Distance(
                 func.ST_Transform(Model.coord, 3857),
                 func.ST_Transform(current_location, 3857)
             ) < querys.distance_threshold)
-            .filter((1-Model.embedding.cosine_distance(query_embeding)) > querys.similarity_threshold)
-            .filter((1-Model.embedding.cosine_distance(negative_query_embeding)) < querys.negative_similarity_threshold)
+            .filter(
+                (1-Model.embedding.cosine_distance(query_embeding)
+                 ) > querys.similarity_threshold)
+            .filter(
+                (1-Model.embedding.cosine_distance(negative_query_embeding)
+                 ) < querys.negative_similarity_threshold)
             # Exclude places already seen
             .filter(Model.name.notin_(seen_places))
             .order_by(desc('similarity'))
@@ -270,8 +292,13 @@ async def search_by_query_seq_v2_(
             chosen_location = locations[chosen_idx]
 
             results.append(chosen_location)
+
+            currect_long = chosen_location.longitude
+            current_lat = chosen_location.latitude
             current_location = WKTElement(
-                f'POINT({chosen_location.longitude} {chosen_location.latitude})', srid=4326)
+                f'POINT({currect_long} {current_lat})',
+                srid=4326
+            )
             seen_places.add(chosen_location.name)
 
         else:
@@ -342,20 +369,75 @@ async def search_by_query_seq_v2(
         db: Session = Depends(get_db),
         current_user: schemas.User = Depends(oauth2.get_current_user)):
     """
-    Search for a route based on user queries, negative queries, and the current location (Version 2).
+    Search for a route based on user queries, negative queries,
+    and the current location (Version 2).
 
-    This endpoint allows users to provide negative queries to exclude certain results.
+    This endpoint allows users to provide negative queries
+    to exclude certain results.
 
     Args:
-    - querys (schemas.RouteQueryV2): The user query data including location type, latitude, longitude, distance threshold, similarity threshold, negative query, negative similarity threshold, and route type.
+    - querys (schemas.RouteQueryV2): The user query data including
+      location type, latitude, longitude, distance threshold,
+      similarity threshold, negative query, negative similarity threshold,
+      and route type.
     - Logged in required: The user must be logged in to search for a route.
 
     Raises:
-    - LocationNotFoundException: If no matching location is found for a given query.
-    - InvalidSearchQueryException: If the provided queries are inconsistent in length or type.
+    - LocationNotFoundException:
+      If no matching location is found for a given query.
+    - InvalidSearchQueryException:
+      If the provided queries are inconsistent in length or type.
 
     Returns:
-    - schemas.RouteOutV2: The resulting route including route ID, locations, route coordinates, instructions, and duration.
+    - schemas.RouteOutV2: The resulting route including
+      route ID, locations, route coordinates, instructions, and duration.
     """
 
     return await search_by_query_seq_v2_(querys, db, current_user)
+
+
+@router.post("/v3/route/", response_model=schemas.RouteOutV3)
+@limiter.limit("1/second")
+async def search_by_query_seq_v3(
+        request: Request,
+        querys: schemas.RouteQueryV2,
+        db: Session = Depends(get_db),
+        current_user: schemas.User = Depends(oauth2.get_current_user)):
+    """
+    Search for a route based on user queries, negative queries,
+    and the current location (Version 2).
+
+    This endpoint allows users to provide negative queries
+    to exclude certain results.
+
+    Args:
+    - querys (schemas.RouteQueryV2): The user query data including
+      location type, latitude, longitude, distance threshold,
+      similarity threshold, negative query, negative similarity threshold,
+      and route type.
+    - Logged in required: The user must be logged in to search for a route.
+
+    Raises:
+    - LocationNotFoundException:
+      If no matching location is found for a given query.
+    - InvalidSearchQueryException:
+      If the provided queries are inconsistent in length or type.
+
+    Returns:
+    - schemas.RouteOutV2: The resulting route including route ID,
+      locations, route coordinates, instructions, and duration.
+    """
+
+    out = await search_by_query_seq_v2_(querys, db, current_user)
+
+    idx = random.randint(0, len(querys.query)-1)
+    route_image_name = get_similar_image(
+        querys.query[idx],
+        querys.location_type[idx]
+    )
+
+    out_v3 = schemas.RouteOutV3(
+        **out.model_dump(),
+        route_image_name=route_image_name
+    )
+    return out_v3

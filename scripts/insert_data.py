@@ -1,9 +1,10 @@
-from sqlalchemy.orm import Session
 from sqlalchemy.dialects.postgresql import insert
 import json
 
 from app.database import get_db
 from app import models
+
+from app.huggingface_models import get_similar_image
 
 # Dictionary mapping location types to models
 DATA_FILES_MODELS = {
@@ -32,9 +33,25 @@ def insert_into_table(data_type: str):
     db.commit()
 
 
+def generate_route_image():
+    """Generate route image"""
+    db = next(get_db())
+    routes = db.query(models.Route).all()
+
+    for route in routes:
+        route_image_name = get_similar_image(route.locations[0])
+        insert_route_image = models.Route_Image(
+            route_id=route.route_id, route_image_name=route_image_name
+        )
+        db.add(insert_route_image)
+        db.commit()
+
+
 def main():
     for data_type in DATA_FILES_MODELS.keys():
         insert_into_table(data_type)
+
+    generate_route_image()
 
 
 if __name__ == "__main__":

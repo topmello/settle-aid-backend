@@ -1,6 +1,16 @@
 from .database import Base
 
-from sqlalchemy import Column, Integer, String, Float, TIMESTAMP, text, ForeignKey, Boolean, ARRAY, Index, UniqueConstraint
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Float,
+    TIMESTAMP,
+    text,
+    ForeignKey,
+    Boolean,
+    ARRAY
+)
 from sqlalchemy.orm import mapped_column, relationship
 from pgvector.sqlalchemy import Vector
 
@@ -54,15 +64,20 @@ class Route(Base):
     duration = Column(Integer, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True),
                         server_default=text("now()"), nullable=False)
+    image = relationship("Route_Image", back_populates="route", uselist=False)
 
 
 class User_Route_Vote(Base):
     __tablename__ = "user_route_votes"
 
-    user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"),
-                     nullable=False, primary_key=True)
-    route_id = Column(Integer, ForeignKey("routes.route_id", ondelete="CASCADE"),
-                      nullable=False, primary_key=True)
+    user_id = Column(Integer,
+                     ForeignKey("users.user_id", ondelete="CASCADE"),
+                     nullable=False,
+                     primary_key=True)
+    route_id = Column(Integer,
+                      ForeignKey("routes.route_id", ondelete="CASCADE"),
+                      nullable=False,
+                      primary_key=True)
     created_at = Column(TIMESTAMP(timezone=True),
                         server_default=text("now()"), nullable=False)
 
@@ -183,8 +198,10 @@ class User_Challenge(Base):
 
     user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"),
                      nullable=False, primary_key=True)
-    challenge_id = Column(Integer, ForeignKey("challenges.id", ondelete="CASCADE"),
-                          nullable=False, primary_key=True)
+    challenge_id = Column(Integer,
+                          ForeignKey("challenges.id", ondelete="CASCADE"),
+                          nullable=False,
+                          primary_key=True)
     challenge = relationship("Challenge", back_populates="user_challenges")
     year = Column(Integer, nullable=False, primary_key=True)
     month = Column(Integer, nullable=False, primary_key=True)
@@ -192,3 +209,14 @@ class User_Challenge(Base):
     created_at = Column(TIMESTAMP(timezone=True), nullable=False)
     progress = Column(Float, nullable=False, default=0.0)
     score_added = Column(Boolean, nullable=False, default=False)
+
+
+class Route_Image(Base):
+    __tablename__ = "route_images"
+    route_id = Column(Integer,
+                      ForeignKey("routes.route_id", ondelete="CASCADE"),
+                      primary_key=True,
+                      nullable=False)
+    route_image_name = Column(String, nullable=False)
+
+    route = relationship("Route", back_populates="image")
