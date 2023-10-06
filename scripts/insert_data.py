@@ -40,10 +40,15 @@ def generate_route_image():
 
     for route in routes:
         route_image_name = get_similar_image(route.locations[0])
-        insert_route_image = models.Route_Image(
+        route_image = models.Route_Image(
             route_id=route.route_id, route_image_name=route_image_name
         )
-        db.add(insert_route_image)
+
+        if db.query(models.Route_Image).filter(
+            models.Route_Image.route_id == route.route_id
+        ).first():
+            continue
+        db.add(route_image)
         db.commit()
 
 
