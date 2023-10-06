@@ -15,6 +15,15 @@ jobs:
       - name: Build the Docker images
         run: docker-compose -f docker-compose-dev.yaml up -d --build
 
+      - name: Set Permissions for transformers_cache
+        run: docker exec backend chmod -R 777 /usr/src/app/transformers_cache
+
+      - name: Set Permissions for pytest_cache
+        run: docker exec backend chmod -R 777 /usr/src/app/.pytest_cache
+
+      - name: Check Directory Permissions
+        run: docker exec backend ls -la /usr/src/app
+
       - name: Run pytest
         run: docker exec backend pytest
 
