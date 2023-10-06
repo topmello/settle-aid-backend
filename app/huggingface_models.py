@@ -38,7 +38,9 @@ for location in location_types:
     for image_path in image_paths:
 
         location_images[location.stem].append(Image.open(image_path))
-        location_images_name[location.stem].append(image_path.stem)
+        location_images_name[location.stem].append(
+            f"{location.stem}/{image_path.stem}"
+        )
 
 
 def get_similar_image(text: str, location_type: Optional[str] = None):
