@@ -92,11 +92,18 @@ class Prompt_Route(Base):
     __tablename__ = "prompt_routes"
 
     id = Column(Integer, primary_key=True, index=True)
-    prompt_id = Column(Integer, ForeignKey(
-        "prompts.prompt_id"), nullable=False)
+    prompt_id = Column(
+        Integer,
+        ForeignKey("prompts.prompt_id", ondelete="CASCADE"),
+        nullable=False)
     created_by_user_id = Column(
-        Integer, ForeignKey("users.user_id"), nullable=False)
-    route_id = Column(Integer, ForeignKey("routes.route_id"), nullable=False)
+        Integer,
+        ForeignKey("users.user_id", ondelete="CASCADE"),
+        nullable=False)
+    route_id = Column(
+        Integer,
+        ForeignKey("routes.route_id", ondelete="CASCADE"),
+        nullable=False)
 
 
 class Landmark(Base):

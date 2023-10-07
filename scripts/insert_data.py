@@ -66,7 +66,6 @@ async def generate_route_image():
                     prompt_,
                     location_type_
                 )
-                print(route_image_name)
 
                 await r.set(
                     f"route_image_name:{location_type}:{prompt_}",
@@ -80,7 +79,6 @@ async def generate_route_image():
         if db.query(models.Route_Image).filter(
             models.Route_Image.route_id == route.route_id
         ).first():
-            print("Route image already exists")
             continue
 
         db.add(route_image)
