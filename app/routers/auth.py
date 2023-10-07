@@ -109,7 +109,7 @@ async def login_(
 
 @router.post('/v2/', response_model=schemas.TokenV2)
 @limiter.limit("5/second")
-async def login(
+async def login_v2(
         request: Request,
         user_credentials: schemas.LoginRequest,
         db: Session = Depends(get_db),

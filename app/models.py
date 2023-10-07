@@ -48,6 +48,12 @@ class Prompt(Base):
     created_at = Column(TIMESTAMP(timezone=True),
                         server_default=text("now()"), nullable=False)
 
+    routes = relationship(
+        "Route",
+        secondary="prompt_routes",
+        backref="prompts"
+    )
+
 
 class Route(Base):
     __tablename__ = "routes"

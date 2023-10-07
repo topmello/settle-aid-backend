@@ -351,9 +351,18 @@ async def search_by_query_seq_v2_(
         duration=duration,
         created_at=prompt.created_at
     )
+
     db.add(insert_route)
     db.commit()
     db.refresh(insert_route)
+
+    insert_prompt_route = models.Prompt_Route(
+        prompt_id=prompt.prompt_id,
+        created_by_user_id=current_user.user_id,
+        route_id=insert_route.route_id
+    )
+    db.add(insert_prompt_route)
+    db.commit()
 
     out = schemas.RouteOutV2.from_orm(insert_route)
 
@@ -472,6 +481,14 @@ async def search_by_query_seq_v3(
         querys.location_type[idx],
         querys.query[idx]
     )
+
+    to_insert = models.Route_Image(
+        route_id=out.route_id,
+        route_image_name=route_image_name
+    )
+
+    db.add(to_insert)
+    db.commit()
 
     out_v3 = schemas.RouteOutV3(
         **out.model_dump(),

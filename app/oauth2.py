@@ -11,7 +11,11 @@ from .database import get_db
 from . import models
 import aioredis
 from .redis import get_redis_refresh_token_db
-from .exceptions import InvalidCredentialsException, UserNotFoundException, InvalidRefreshTokenException
+from .exceptions import (
+    InvalidCredentialsException,
+    UserNotFoundException,
+    InvalidRefreshTokenException
+)
 
 
 class CustomOAuth2PasswordBearer(OAuth2PasswordBearer):

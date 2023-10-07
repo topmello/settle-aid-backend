@@ -1,9 +1,9 @@
 from sqlalchemy.dialects.postgresql import insert
 import json
-
-from app.database import get_db
+import asyncio
 from app import models
-
+from app.database import get_db
+from app.redis import get_redis_feed_db_context
 from app.huggingface_models import get_similar_image
 
 # Dictionary mapping location types to models
@@ -33,13 +33,46 @@ def insert_into_table(data_type: str):
     db.commit()
 
 
-def generate_route_image():
+async def generate_route_image():
     """Generate route image"""
     db = next(get_db())
-    routes = db.query(models.Route).all()
 
-    for route in routes:
-        route_image_name = get_similar_image(route.locations[0])
+    routes_with_prompts = (
+        db.query(
+            models.Route,
+            models.Prompt.prompt,
+            models.Prompt.location_type
+        )
+        .join(
+            models.Prompt_Route,
+            models.Route.route_id == models.Prompt_Route.route_id
+        )
+        .join(
+            models.Prompt,
+            models.Prompt.prompt_id == models.Prompt_Route.prompt_id)
+        .all()
+    )
+    for route, prompt, location_type in routes_with_prompts:
+        location_type_ = location_type[0] if location_type else None
+        prompt_ = prompt[0] if prompt else None
+
+        async with get_redis_feed_db_context() as r:
+            route_image_name = await r.get(
+                f"route_image_name:{location_type_}:{prompt_}"
+            )
+            if route_image_name != "null" and route_image_name is not None:
+
+                route_image_name = get_similar_image(
+                    prompt_,
+                    location_type_
+                )
+                print(route_image_name)
+
+                await r.set(
+                    f"route_image_name:{location_type}:{prompt_}",
+                    route_image_name
+                )
+
         route_image = models.Route_Image(
             route_id=route.route_id, route_image_name=route_image_name
         )
@@ -47,7 +80,9 @@ def generate_route_image():
         if db.query(models.Route_Image).filter(
             models.Route_Image.route_id == route.route_id
         ).first():
+            print("Route image already exists")
             continue
+
         db.add(route_image)
         db.commit()
 
@@ -56,7 +91,7 @@ def main():
     for data_type in DATA_FILES_MODELS.keys():
         insert_into_table(data_type)
 
-    generate_route_image()
+    asyncio.run(generate_route_image())
 
 
 if __name__ == "__main__":
