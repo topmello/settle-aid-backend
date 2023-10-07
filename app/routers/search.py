@@ -1,15 +1,14 @@
 from fastapi import APIRouter, Depends, Request
 
-
 from sqlalchemy import desc, func
 from sqlalchemy.orm import Session
 from geoalchemy2 import WKTElement
-
+import aioredis
 import numpy as np
 import random
 from ..huggingface_models import embedding_model, get_similar_image
 from ..database import get_db
-
+from ..redis import get_redis_feed_db, async_retry
 
 from ..mapbox import get_route
 
@@ -396,12 +395,50 @@ async def search_by_query_seq_v2(
     return await search_by_query_seq_v2_(querys, db, current_user)
 
 
+@async_retry()
+async def get_route_image_name(
+        redis_feed_db: aioredis.Redis,
+        location_type: str,
+        query: str):
+    """
+    Get the image name of the route image for a given location type and query.
+    Args:
+    - redis_feed_db (aioredis.Redis): The redis database.
+    - location_type (str): The location type of the query.
+    - query (str): The query.
+    Returns:
+    - str: The image name of the route image.
+    """
+
+    route_image_name = await redis_feed_db.get(
+        f"route_image_name:{location_type}:{query}"
+    )
+
+    if route_image_name:
+        print("cache hit")
+        return route_image_name
+    else:
+        print("cache miss")
+        route_image_name = get_similar_image(
+            query,
+            location_type
+        )
+
+        await redis_feed_db.set(
+            f"route_image_name:{location_type}:{query}",
+            route_image_name
+        )
+
+        return route_image_name
+
+
 @router.post("/v3/route/", response_model=schemas.RouteOutV3)
 @limiter.limit("1/second")
 async def search_by_query_seq_v3(
         request: Request,
         querys: schemas.RouteQueryV2,
         db: Session = Depends(get_db),
+        r: aioredis.Redis = Depends(get_redis_feed_db),
         current_user: schemas.User = Depends(oauth2.get_current_user)):
     """
     Search for a route based on user queries, negative queries,
@@ -431,9 +468,11 @@ async def search_by_query_seq_v3(
     out = await search_by_query_seq_v2_(querys, db, current_user)
 
     idx = random.randint(0, len(querys.query)-1)
-    route_image_name = get_similar_image(
-        querys.query[idx],
-        querys.location_type[idx]
+
+    route_image_name = await get_route_image_name(
+        r,
+        querys.location_type[idx],
+        querys.query[idx]
     )
 
     out_v3 = schemas.RouteOutV3(
