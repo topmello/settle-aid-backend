@@ -6,7 +6,6 @@ from fastapi.openapi.utils import get_openapi
 import aioredis
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
-
 from .routers import (
     auth,
     user,

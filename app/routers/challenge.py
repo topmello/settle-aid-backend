@@ -81,7 +81,8 @@ async def get_user_challenge(
     Parameters:
     - user_id (int): The ID of the user to fetch challenges for.
     - db (Session): The database session, injected by FastAPI.
-    - current_user (schemas.User): The current authenticated user, injected by FastAPI.
+    - current_user (schemas.User): The current authenticated user,
+      injected by FastAPI.
 
     Returns:
     - List[schemas.UserChallengeOut]: A list of user challenges created today.
@@ -92,7 +93,8 @@ async def get_user_challenge(
     # Get the current date
     current_date = datetime.now()
 
-    # Query the database to get the challenges created today for the given user_id
+    # Query the database to get the challenges created today
+    # for the given user_id
     query = db.query(models.User_Challenge).filter(
         models.User_Challenge.user_id == user_id,
         func.date(models.User_Challenge.created_at) == current_date.date()
@@ -102,7 +104,7 @@ async def get_user_challenge(
 
 
 @router.get("/all/{user_id}/", response_model=list[schemas.UserChallengeOut])
-async def get_user_challenge(
+async def get_all_user_challenge(
     request: Request,
     user_id: int,
     db: Session = Depends(get_db),
@@ -116,7 +118,8 @@ async def get_user_challenge(
     Parameters:
     - user_id (int): The ID of the user to fetch challenges for.
     - db (Session): The database session, injected by FastAPI.
-    - current_user (schemas.User): The current authenticated user, injected by FastAPI.
+    - current_user (schemas.User): The current authenticated user,
+      injected by FastAPI.
 
     Returns:
     - List[schemas.UserChallengeOut]: A list of all user challenges.
@@ -125,10 +128,8 @@ async def get_user_challenge(
     if current_user.user_id != user_id:
         raise NotAuthorisedException()
 
-    # Get the current date
-    current_date = datetime.now()
-
-    # Query the database to get the challenges created today for the given user_id
+    # Query the database to get the challenges created today
+    # for the given user_id
     query = db.query(models.User_Challenge).filter(
         models.User_Challenge.user_id == user_id
     ).all()
@@ -136,7 +137,8 @@ async def get_user_challenge(
     return query
 
 
-@router.get("/weekly_score/{user_id}/", response_model=list[schemas.ChallengeScoreOut])
+@router.get("/weekly_score/{user_id}/",
+            response_model=list[schemas.ChallengeScoreOut])
 async def calculate_weekly_score(
     request: Request,
     user_id: int,
@@ -146,13 +148,15 @@ async def calculate_weekly_score(
     """
     Calculate and fetch the weekly score for a specified user.
 
-    This endpoint calculates and returns the sum of scores for challenges with progress equal to 1, 
+    This endpoint calculates and returns the sum of scores for challenges
+    with progress equal to 1,
     created in the past 7 days for a specified user, grouped by the date.
 
     Parameters:
     - user_id (int): The ID of the user to calculate the weekly score for.
     - db (Session): The database session, injected by FastAPI.
-    - current_user (schemas.User): The current authenticated user, injected by FastAPI.
+    - current_user (schemas.User): The current authenticated user,
+      injected by FastAPI.
 
     Returns:
     - List[schemas.ChallengeScoreOut]: A list of challenge scores.
@@ -160,20 +164,22 @@ async def calculate_weekly_score(
 
     if current_user.user_id != user_id:
         raise NotAuthorisedException()
-    # Get the current date
-    current_date = datetime.now().date()
+    # Get the current date in Melbourne timezone
+    current_date_melbourne = db.query(
+        func.date(func.timezone('Australia/Melbourne', func.now()))
+    ).scalar()
 
-    # Calculate the date 7 days ago
-    seven_days_ago = current_date - timedelta(days=7)
+    # Calculate the date 7 days ago based on Melbourne time
+    seven_days_ago = current_date_melbourne - timedelta(days=7)
 
-    # Query the database to get the sum of scores for challenges with progress equal to 1
+    # Query the database to get the sum of scores for challenges
+    # with progress equal to 1
     # created in the past 7 days for the given user_id, grouped by the date
     query = (
         db.query(
             func.date(
-                func.timezone('Australia/Melbourne',
-                              models.User_Challenge.created_at)
-            ).label("date"),
+                models.User_Challenge.created_at)
+            .label("date"),
             func.sum(
                 case((models.User_Challenge.progress ==
                      1, models.Challenge.score), else_=0)
@@ -182,28 +188,34 @@ async def calculate_weekly_score(
                 case((models.User_Challenge.progress ==
                      1, models.Challenge.score), else_=0)
 
-            ).filter(models.Challenge.type == 'distance_travelled').label("distance_travelled_score"),
+            ).filter(models.Challenge.type == 'distance_travelled')
+            .label("distance_travelled_score"),
             func.sum(
                 case((models.User_Challenge.progress ==
                      1, models.Challenge.score), else_=0)
 
-            ).filter(models.Challenge.type == 'route_generation').label("route_generation_score"),
+            ).filter(models.Challenge.type == 'route_generation')
+            .label("route_generation_score"),
             func.sum(
                 case((models.User_Challenge.progress ==
                      1, models.Challenge.score), else_=0)
 
-            ).filter(models.Challenge.type == 'favourite_sharing').label("favourite_sharing_score"),
+            ).filter(models.Challenge.type == 'favourite_sharing')
+            .label("favourite_sharing_score"),
         )
-        .join(models.Challenge, models.User_Challenge.challenge_id == models.Challenge.id)
+        .join(
+            models.Challenge,
+            models.User_Challenge.challenge_id == models.Challenge.id
+        )
         .filter(
             models.User_Challenge.user_id == user_id,
             models.User_Challenge.progress == 1,
             func.date(models.User_Challenge.created_at) >= seven_days_ago,
         )
         .group_by(func.date(
-            func.timezone('Australia/Melbourne',
-                          models.User_Challenge.created_at)
-        ).label("date"),)
+            models.User_Challenge.created_at
+        )
+            .label("date"),)
     )
 
     # Execute the query and fetch the results
@@ -213,7 +225,12 @@ async def calculate_weekly_score(
 
 
 @async_retry()
-async def update_score_in_redis(user_id: int, score: float, r: aioredis.Redis, db: Session):
+async def update_score_in_redis(
+    user_id: int,
+    score: float,
+    r: aioredis.Redis,
+    db: Session
+):
     """
     Update user's score in Redis.
 
@@ -226,12 +243,17 @@ async def update_score_in_redis(user_id: int, score: float, r: aioredis.Redis, d
     - db (Session): The database session.
 
     Raises:
-    - Any exceptions raised by the Redis operations will be handled by the async_retry decorator.
+    - Any exceptions raised by the Redis operations
+      will be handled by the async_retry decorator.
     """
 
-    # Get the current week number and year
-    current_date = datetime.now()
-    year, week_num = current_date.isocalendar()[0:2]
+    # Get the current year and week number from the database
+    current_date_melbourne = db.query(
+        func.date(func.timezone('Australia/Melbourne', func.now()))
+    ).scalar()
+
+    year = current_date_melbourne.year
+    week_num = current_date_melbourne.strftime("%U")  # gets week number
 
     # Add the user and their score to the ZSET for the current week
     key = f'challenge_leaderboard_score:{year}:{week_num}'
@@ -262,7 +284,8 @@ async def add_challenge_common(
     """
     Common function to add a challenge.
 
-    This function is used to add a challenge for a user, and updates the progress of the challenge.
+    This function is used to add a challenge for a user,
+    and updates the progress of the challenge.
 
     Parameters:
     - request (Request): The request object.
@@ -283,14 +306,17 @@ async def add_challenge_common(
 
     challenges = db.query(models.Challenge).filter(
         models.Challenge.type == challenge_type).all()
-    current_date = datetime.now()
-    year = current_date.year
-    month = current_date.month
-    day = current_date.day
+    # Get the current date in Melbourne time from the database
+    current_datetime_melbourne = db.query(
+        func.timezone('Australia/Melbourne', func.now())
+    ).scalar()
+
+    year = current_datetime_melbourne.year
+    month = current_datetime_melbourne.month
+    day = current_datetime_melbourne.day
 
     for challenge in challenges:
         progress = progress_calculator(challenge_data, challenge)
-        progress = min(progress, 1.0)  # Ensure progress does not exceed 1.0
 
         user_challenge = db.query(models.User_Challenge).filter(
             models.User_Challenge.user_id == user_id,
@@ -301,8 +327,9 @@ async def add_challenge_common(
         ).first()
 
         if user_challenge:
-            user_challenge.progress = progress
-            user_challenge.created_at = current_date
+            user_challenge.progress += progress
+            user_challenge.progress = min(user_challenge.progress, 1.0)
+            user_challenge.created_at = current_datetime_melbourne
         else:
             user_challenge = models.User_Challenge(
                 user_id=user_id,
@@ -310,8 +337,8 @@ async def add_challenge_common(
                 year=year,
                 month=month,
                 day=day,
-                created_at=current_date,
-                progress=progress
+                created_at=current_datetime_melbourne,
+                progress=min(progress, 1.0)
             )
             db.add(user_challenge)
 
@@ -337,7 +364,8 @@ def distance_travelled_calculator(challenge_data, challenge):
     """
     Calculate the progress for distance travelled challenge.
 
-    This function calculates the progress for the distance travelled challenge based on the steps and grade.
+    This function calculates the progress
+    for the distance travelled challenge based on the steps and grade.
 
     Parameters:
     - challenge_data: The challenge data containing the steps.
@@ -362,7 +390,8 @@ async def add_challenge_distance_travelled(
     """
     Add distance travelled challenge.
 
-    This endpoint is used to add a distance travelled challenge for a specific user.
+    This endpoint is used to add a distance travelled challenge
+    for a specific user.
 
     Parameters:
     - request (Request): The request object.
@@ -370,7 +399,8 @@ async def add_challenge_distance_travelled(
     - challenge_data (schemas.DistanceTravelledChallenge): The challenge data.
     - db (Session): The database session, injected by FastAPI.
     - r (aioredis.Redis): The Redis instance, injected by FastAPI.
-    - current_user (schemas.User): The current authenticated user, injected by FastAPI.
+    - current_user (schemas.User): The current authenticated user,
+      injected by FastAPI.
 
     Returns:
     - The response message.
@@ -388,14 +418,20 @@ async def add_challenge_distance_travelled(
     )
 
 
-def route_generation_calculator(challenge_data: schemas.RouteGenerationChallenge, challenge):
+def route_generation_calculator(
+    challenge_data: schemas.RouteGenerationChallenge,
+    challenge
+):
     """
     Calculate the progress for route generation challenge.
 
-    This function calculates the progress for the route generation challenge based on the routes generated and grade.
+    This function calculates the progress
+    for the route generation challenge
+    based on the routes generated and grade.
 
     Parameters:
-    - challenge_data (schemas.RouteGenerationChallenge): The challenge data containing the routes generated.
+    - challenge_data (schemas.RouteGenerationChallenge):
+      The challenge data containing the routes generated.
     - challenge: The challenge object.
 
     Returns:
@@ -426,7 +462,8 @@ async def add_challenge_route_generation(
     """
     Add route generation challenge.
 
-    This endpoint is used to add a route generation challenge for a specific user.
+    This endpoint is used to add a route generation challenge
+    for a specific user.
 
     Parameters:
     - request (Request): The request object.
@@ -434,7 +471,8 @@ async def add_challenge_route_generation(
     - challenge_data (schemas.RouteGenerationChallenge): The challenge data.
     - db (Session): The database session, injected by FastAPI.
     - r (aioredis.Redis): The Redis instance, injected by FastAPI.
-    - current_user (schemas.User): The current authenticated user, injected by FastAPI.
+    - current_user (schemas.User): The current authenticated user,
+      injected by FastAPI.
 
     Returns:
     - The response message.
@@ -452,14 +490,20 @@ async def add_challenge_route_generation(
     )
 
 
-def favourite_sharing_calculator(challenge_data: schemas.RouteFavChallenge, challenge):
+def favourite_sharing_calculator(
+    challenge_data: schemas.RouteFavChallenge,
+    challenge
+):
     """
     Calculate the progress for favourite sharing challenge.
 
-    This function calculates the progress for the favourite sharing challenge based on the routes favourited/shared and grade.
+    This function calculates the progress
+    for the favourite sharing challenge
+    based on the routes favourited/shared and grade.
 
     Parameters:
-    - challenge_data (schemas.RouteFavChallenge): The challenge data containing the routes favourited/shared.
+    - challenge_data (schemas.RouteFavChallenge):
+      The challenge data containing the routes favourited/shared.
     - challenge: The challenge object.
 
     Returns:
@@ -490,7 +534,8 @@ async def add_challenge_favourite_sharing(
     """
     Add favourite sharing challenge.
 
-    This endpoint is used to add a favourite sharing challenge for a specific user.
+    This endpoint is used to add a favourite sharing challenge
+    for a specific user.
 
     Parameters:
     - request (Request): The request object.
@@ -498,7 +543,8 @@ async def add_challenge_favourite_sharing(
     - challenge_data (schemas.RouteFavChallenge): The challenge data.
     - db (Session): The database session, injected by FastAPI.
     - r (aioredis.Redis): The Redis instance, injected by FastAPI.
-    - current_user (schemas.User): The current authenticated user, injected by FastAPI.
+    - current_user (schemas.User): The current authenticated user,
+      injected by FastAPI.
 
     Returns:
     - The response message.

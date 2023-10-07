@@ -12,6 +12,7 @@ import scripts.insert_data  # noqa
 from alembic import command  # noqa
 from alembic.config import Config  # noqa
 from datetime import datetime  # noqa
+import pytz  # noqa
 
 client = TestClient(app)
 alembic_config = Config("alembic.ini")
@@ -61,7 +62,7 @@ def test_login(test_client):
         "/login/", json={"username": "test", "password": "test1234"})
     assert res.status_code == 200
     assert res.json()["token_type"] == "bearer"
-    assert res.json()["access_token"] != None
+    assert res.json()["access_token"] is not None
 
 
 def test_login_v2(test_client):
@@ -275,8 +276,9 @@ def test_challenge(test_client):
         f"challenge/all/{user_id}",
         headers=headers
     )
-
-    today = datetime.now().date()
+    # Adjust the 'today' calculation for Melbourne's timezone
+    melbourne_timezone = pytz.timezone('Australia/Melbourne')
+    today = datetime.now(melbourne_timezone).date()
     today_challenges = [
         challenge for challenge in res.json()
         if challenge["year"] == today.year

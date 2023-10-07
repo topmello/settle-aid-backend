@@ -415,10 +415,8 @@ async def get_route_image_name(
     )
 
     if route_image_name:
-        print("cache hit")
         return route_image_name
     else:
-        print("cache miss")
         route_image_name = get_similar_image(
             query,
             location_type

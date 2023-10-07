@@ -1,0 +1,110 @@
+version: '3'
+services:
+  db:
+    container_name: settle-aid-db
+    image: jirathipk/postgres-vec-geo:latest
+    restart: always
+    environment:
+      - POSTGRES_DB=database
+      - POSTGRES_USER=db_user
+      - POSTGRES_PASSWORD=${{DATABASE_PASSWORD}}
+    volumes:
+      - database_volume:/var/lib/postgresql/data/
+      - dbbackups_volume:/backups
+  redis:
+    container_name: settle-aid-redis
+    image: redis:latest
+    restart: always
+    command: redis-server --requirepass ${{REDIS_PASSWORD}} --loglevel verbose
+    volumes:
+      - redis_volume:/data
+  
+  backend:
+    image: jirathipk/settle-aid-backend:latest
+    container_name: settle-aid-backend
+    user: myuser
+    environment:
+      - DATABASE_HOSTNAME=db
+      - DATABASE_NAME=database
+      - DATABASE_PORT=5432
+      - DATABASE_PASSWORD=${{DATABASE_PASSWORD}}
+      - DATABASE_USERNAME=db_user
+      - SECRET_KEY=${{SECRET_KEY}}
+      - REFRESH_SECRET_KEY=${{REFRESH_SECRET_KEY}}
+      - REFRESH_TOKEN_EXPIRE_DAYS=7
+      - ALGORITHM=${{ALGORITHM}}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=30
+      - MAPBOX_ACCESS_TOKEN=${{MAPBOX_ACCESS_TOKEN}}
+      - DOC_USERNAME=topmello
+      - DOC_PASSWORD=${{DOC_PASSWORD}}
+      - REDIS_HOSTNAME=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${{REDIS_PASSWORD}}
+      - USER_CACHE_EXPIRY=3600
+      - TRANSFORMERS_CACHE=/usr/src/app/transformers_cache
+      - PYTEST_ADDOPTS="-o cache_dir=/usr/src/app/.pytest_cache"
+      - VIRTUAL_HOST=${{SERVER_DOMAIN_NAME}}
+      - VIRTUAL_PORT=8000
+      - LETSENCRYPT_HOST=${{SERVER_DOMAIN_NAME}}
+      - LETSENCRYPT_EMAIL=${{LETSENCRYPT_EMAIL}}
+    depends_on:
+      - db
+      - redis
+
+  pgbackups:
+    container_name: settle-aid-db-backup
+    image: prodrigestivill/postgres-backup-local
+    restart: always
+    user: postgres:postgres
+    volumes:
+      - dbbackups_volume:/backups
+    links:
+      - db
+    depends_on:
+      - db
+    environment:
+      - POSTGRES_HOST=db
+      - POSTGRES_DB=database
+      - POSTGRES_USER=db_user
+      - POSTGRES_PASSWORD=${{DATABASE_PASSWORD}}
+      - POSTGRES_EXTRA_OPTS=-Z6 --schema=public --blobs
+      - SCHEDULE=@daily
+      - BACKUP_KEEP_DAYS=7
+      - BACKUP_KEEP_WEEKS=4
+      - BACKUP_KEEP_MONTHS=6
+      - HEALTHCHECK_PORT=8080
+  
+  nginx-proxy:
+    image: nginxproxy/nginx-proxy
+    container_name: nginx-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - certs:/etc/nginx/certs
+      - vhost:/etc/nginx/vhost.d
+      - html:/usr/share/nginx/html
+      - ./${{SERVER_DOMAIN_NAME}}:/etc/nginx/vhost.d/${{SERVER_DOMAIN_NAME}}
+  acme-companion:
+    image: nginxproxy/acme-companion
+    container_name: nginx-proxy-acme
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - certs:/etc/nginx/certs
+      - html:/usr/share/nginx/html
+      - vhost:/etc/nginx/vhost.d
+      - acme:/etc/acme.sh
+    environment:
+      - NGINX_PROXY_CONTAINER=nginx-proxy
+    depends_on:
+      - nginx-proxy
+
+volumes:
+  certs:
+  vhost:
+  html:
+  acme:
+  database_volume:
+  redis_volume:
+  dbbackups_volume:
