@@ -1,8 +1,6 @@
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 from passlib.context import CryptContext
-from typing import List, Dict
 
 from .. import schemas, models, oauth2
 

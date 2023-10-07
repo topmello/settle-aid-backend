@@ -105,7 +105,6 @@ class RouteOutV3(RouteOutV2):
             {"latitude": lat, "longitude": lon}
             for lat, lon in zip(route.route_latitudes, route.route_longitudes)
         ]
-
         route_image_name = route.image.route_image_name if route.image else ''
 
         return cls(

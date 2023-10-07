@@ -11,6 +11,7 @@ from .. import schemas, models, oauth2
 from ..database import get_db
 from ..redis import get_redis_feed_db, async_retry
 from ..limiter import limiter
+from ..huggingface_models import get_similar_image
 
 
 from ..exceptions import (
@@ -54,6 +55,50 @@ async def get_route_from_redis_or_db(
 
         if route_obj is None:
             return None
+
+        if route_obj.image is None:
+
+            route_with_prompt = (
+                db.query(
+                    models.Route,
+                    models.Prompt.prompt,
+                    models.Prompt.location_type
+                )
+                .join(
+                    models.Prompt_Route,
+                    models.Route.route_id == models.Prompt_Route.route_id
+                )
+                .join(
+                    models.Prompt,
+                    models.Prompt.prompt_id == models.Prompt_Route.prompt_id)
+                .filter(models.Route.route_id == route_id)
+            ).first()
+
+            prompt_ = route_with_prompt.prompt[0]
+            location_type_ = route_with_prompt.location_type[0]
+
+            route_image_name = await r.get(
+                f"route_image_name:{location_type_}:{prompt_}"
+            )
+
+            if route_image_name is None:
+
+                route_image_name = get_similar_image(
+                    prompt_,
+                    location_type_
+                )
+
+                await r.set(
+                    f"route_image_name:{location_type_}:{prompt_}",
+                    route_image_name
+                )
+
+            route_obj.image = models.Route_Image(
+                route_id=route_id, route_image_name=route_image_name
+            )
+
+            db.add(route_obj.image)
+            db.commit()
 
         route_obj = schemas.RouteOutV3.from_orm(route_obj)
 

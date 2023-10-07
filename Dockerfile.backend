@@ -19,17 +19,17 @@ COPY . .
 
 # Change the ownership and set permissions for directories
 RUN chown -R myuser:myuser /usr/src/app && \
-    mkdir -m 777 -p /usr/src/app/.pytest_cache && \
-    chown -R myuser:myuser /usr/src/app/.pytest_cache && \
-    mkdir -m 777 -p /usr/src/app/transformers_cache && \
-    chown -R myuser:myuser /usr/src/app/transformers_cache && \
-    mkdir -m 777 -p /home/myuser/.cache/torch/sentence_transformers && \
-    chown -R myuser:myuser /home/myuser/.cache
+  mkdir -m 777 -p /usr/src/app/.pytest_cache && \
+  chown -R myuser:myuser /usr/src/app/.pytest_cache && \
+  mkdir -m 777 -p /usr/src/app/transformers_cache && \
+  chown -R myuser:myuser /usr/src/app/transformers_cache && \
+  mkdir -m 777 -p /home/myuser/.cache/torch/sentence_transformers && \
+  chown -R myuser:myuser /home/myuser/.cache
 
 # Switch to 'myuser'
 USER myuser
 
 
 # Set the default command for the container
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "80"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 

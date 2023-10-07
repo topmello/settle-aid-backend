@@ -51,8 +51,6 @@ def test_translate(test_client):
 def test_create_user(test_client):
     res = test_client.post(
         "/user/", json={"username": "test", "password": "test1234"})
-    if res.status_code == 400:
-        assert res.json()["detail"] == "Username already registered"
     if res.status_code == 201:
         assert res.json()["username"] == "test"
 

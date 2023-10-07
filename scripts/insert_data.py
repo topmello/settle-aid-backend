@@ -33,63 +33,9 @@ def insert_into_table(data_type: str):
     db.commit()
 
 
-async def generate_route_image():
-    """Generate route image"""
-    db = next(get_db())
-
-    routes_with_prompts = (
-        db.query(
-            models.Route,
-            models.Prompt.prompt,
-            models.Prompt.location_type
-        )
-        .join(
-            models.Prompt_Route,
-            models.Route.route_id == models.Prompt_Route.route_id
-        )
-        .join(
-            models.Prompt,
-            models.Prompt.prompt_id == models.Prompt_Route.prompt_id)
-        .all()
-    )
-    for route, prompt, location_type in routes_with_prompts:
-        location_type_ = location_type[0] if location_type else None
-        prompt_ = prompt[0] if prompt else None
-
-        async with get_redis_feed_db_context() as r:
-            route_image_name = await r.get(
-                f"route_image_name:{location_type_}:{prompt_}"
-            )
-            if route_image_name != "null" and route_image_name is not None:
-
-                route_image_name = get_similar_image(
-                    prompt_,
-                    location_type_
-                )
-
-                await r.set(
-                    f"route_image_name:{location_type}:{prompt_}",
-                    route_image_name
-                )
-
-        route_image = models.Route_Image(
-            route_id=route.route_id, route_image_name=route_image_name
-        )
-
-        if db.query(models.Route_Image).filter(
-            models.Route_Image.route_id == route.route_id
-        ).first():
-            continue
-
-        db.add(route_image)
-        db.commit()
-
-
 def main():
     for data_type in DATA_FILES_MODELS.keys():
         insert_into_table(data_type)
-
-    asyncio.run(generate_route_image())
 
 
 if __name__ == "__main__":

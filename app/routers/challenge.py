@@ -24,11 +24,16 @@ async def get_all_challenge_spec(db: Session = Depends(get_db)):
 
 
 async def get_leaderboard_(
-    limit: int,
-    r: aioredis.Redis
+        limit: int,
+        r: aioredis.Redis,
+        db: Session
 ):
-    current_date = datetime.now()
-    year, week_num = current_date.isocalendar()[0:2]
+    current_date_melbourne = db.query(
+        func.date(func.timezone('Australia/Melbourne', func.now()))
+    ).scalar()
+
+    year = current_date_melbourne.year
+    week_num = current_date_melbourne.strftime("%U")  # gets week number
 
     # Fetch top users from Redis for the current week
     key = f'challenge_leaderboard_score:{year}:{week_num}'
@@ -49,7 +54,9 @@ async def get_leaderboard(
             10, gt=0, le=100,
             description="The number of top users to fetch. Default is 10."
         ),
-        r: aioredis.Redis = Depends(get_redis_feed_db)):
+        db: Session = Depends(get_db),
+        r: aioredis.Redis = Depends(get_redis_feed_db)
+):
     """
     Fetch the leaderboard.
 
@@ -63,15 +70,15 @@ async def get_leaderboard(
     - List[schemas.LeaderboardOut]: A list of leaderboard entries.
     """
 
-    return await get_leaderboard_(limit, r)
+    return await get_leaderboard_(limit, r, db)
 
 
 @router.get("/{user_id}/", response_model=list[schemas.UserChallengeOut])
 async def get_user_challenge(
-    request: Request,
-    user_id: int,
-    db: Session = Depends(get_db),
-    current_user: schemas.User = Depends(oauth2.get_current_user)
+        request: Request,
+        user_id: int,
+        db: Session = Depends(get_db),
+        current_user: schemas.User = Depends(oauth2.get_current_user)
 ):
     """
     Fetch the user's challenges created today.
@@ -91,13 +98,15 @@ async def get_user_challenge(
     if current_user.user_id != user_id:
         raise NotAuthorisedException()
     # Get the current date
-    current_date = datetime.now()
+    current_date_melbourne = db.query(
+        func.date(func.timezone('Australia/Melbourne', func.now()))
+    ).scalar()
 
     # Query the database to get the challenges created today
     # for the given user_id
     query = db.query(models.User_Challenge).filter(
         models.User_Challenge.user_id == user_id,
-        func.date(models.User_Challenge.created_at) == current_date.date()
+        func.date(models.User_Challenge.created_at) == current_date_melbourne
     ).all()
 
     return query
@@ -105,10 +114,10 @@ async def get_user_challenge(
 
 @router.get("/all/{user_id}/", response_model=list[schemas.UserChallengeOut])
 async def get_all_user_challenge(
-    request: Request,
-    user_id: int,
-    db: Session = Depends(get_db),
-    current_user: schemas.User = Depends(oauth2.get_current_user)
+        request: Request,
+        user_id: int,
+        db: Session = Depends(get_db),
+        current_user: schemas.User = Depends(oauth2.get_current_user)
 ):
     """
     Fetch all challenges for a specified user.
@@ -140,10 +149,10 @@ async def get_all_user_challenge(
 @router.get("/weekly_score/{user_id}/",
             response_model=list[schemas.ChallengeScoreOut])
 async def calculate_weekly_score(
-    request: Request,
-    user_id: int,
-    db: Session = Depends(get_db),
-    current_user: schemas.User = Depends(oauth2.get_current_user)
+        request: Request,
+        user_id: int,
+        db: Session = Depends(get_db),
+        current_user: schemas.User = Depends(oauth2.get_current_user)
 ):
     """
     Calculate and fetch the weekly score for a specified user.
@@ -226,10 +235,10 @@ async def calculate_weekly_score(
 
 @async_retry()
 async def update_score_in_redis(
-    user_id: int,
-    score: float,
-    r: aioredis.Redis,
-    db: Session
+        user_id: int,
+        score: float,
+        r: aioredis.Redis,
+        db: Session
 ):
     """
     Update user's score in Redis.
@@ -361,8 +370,8 @@ async def add_challenge_common(
 
 
 def route_generation_calculator(
-    challenge_data: schemas.RouteGenerationChallenge,
-    challenge
+        challenge_data: schemas.RouteGenerationChallenge,
+        challenge
 ):
     """
     Calculate the progress for route generation challenge.
@@ -433,8 +442,8 @@ async def add_challenge_route_generation(
 
 
 def favourite_calculator(
-    challenge_data: schemas.RouteFavChallenge,
-    challenge
+        challenge_data: schemas.RouteFavChallenge,
+        challenge
 ):
     """
     Calculate the progress for favourite sharing challenge.
@@ -505,8 +514,8 @@ async def add_challenge_favourite(
 
 
 def shared_calculator(
-    challenge_data: schemas.RouteShareChallenge,
-    challenge
+        challenge_data: schemas.RouteShareChallenge,
+        challenge
 ):
     """
     Calculate the progress for sharing challenge.
@@ -577,8 +586,8 @@ async def add_challenge_share(
 
 
 def publised_calculator(
-    challenge_data: schemas.RoutePublishChallenge,
-    challenge
+        challenge_data: schemas.RoutePublishChallenge,
+        challenge
 ):
     """
     Calculate the progress for sharing challenge.
@@ -609,7 +618,7 @@ def publised_calculator(
 
 
 @router.post("/published/{user_id}/", status_code=201)
-async def add_challenge_share(
+async def add_challenge_publish(
         request: Request,
         user_id: int,
         challenge_data: schemas.RoutePublishChallenge,
@@ -649,8 +658,8 @@ async def add_challenge_share(
 
 
 def read_tips_calculator(
-    challenge_data: schemas.ReadTipChallenge,
-    challenge
+        challenge_data: schemas.ReadTipChallenge,
+        challenge
 ):
     """
     Calculate the progress for sharing challenge.
@@ -721,8 +730,8 @@ async def add_challenge_tips(
 
 
 def logged_in_cal(
-    challenge_data: schemas.DailyLoggedInChallenge,
-    challenge
+        challenge_data: schemas.DailyLoggedInChallenge,
+        challenge
 ):
 
     if challenge_data.logged_in:
@@ -733,12 +742,12 @@ def logged_in_cal(
 
 @router.post("/logged_in/{user_id}/", status_code=201)
 async def add_challenge_loggedin(
-    request: Request,
-    user_id: int,
-    challenge_data: schemas.DailyLoggedInChallenge,
-    db: Session = Depends(get_db),
-    r: aioredis.Redis = Depends(get_redis_feed_db),
-    current_user: schemas.User = Depends(oauth2.get_current_user)
+        request: Request,
+        user_id: int,
+        challenge_data: schemas.DailyLoggedInChallenge,
+        db: Session = Depends(get_db),
+        r: aioredis.Redis = Depends(get_redis_feed_db),
+        current_user: schemas.User = Depends(oauth2.get_current_user)
 ):
     return await add_challenge_common(
         request,
@@ -753,8 +762,8 @@ async def add_challenge_loggedin(
 
 
 def accessed_feed_cal(
-    challenge_data: schemas.AccessedGlobalFeedChallenge,
-    challenge
+        challenge_data: schemas.AccessedGlobalFeedChallenge,
+        challenge
 ):
 
     if challenge_data.accessed_global_feed:
@@ -765,12 +774,12 @@ def accessed_feed_cal(
 
 @router.post("/accessed_global_feed/{user_id}/", status_code=201)
 async def add_challenge_accessed_feed(
-    request: Request,
-    user_id: int,
-    challenge_data: schemas.AccessedGlobalFeedChallenge,
-    db: Session = Depends(get_db),
-    r: aioredis.Redis = Depends(get_redis_feed_db),
-    current_user: schemas.User = Depends(oauth2.get_current_user)
+        request: Request,
+        user_id: int,
+        challenge_data: schemas.AccessedGlobalFeedChallenge,
+        db: Session = Depends(get_db),
+        r: aioredis.Redis = Depends(get_redis_feed_db),
+        current_user: schemas.User = Depends(oauth2.get_current_user)
 ):
     return await add_challenge_common(
         request,
