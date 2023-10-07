@@ -268,16 +268,32 @@ class UserChallengeOut(BaseModel):
     progress: float
 
 
-class DistanceTravelledChallenge(BaseModel):
-    steps: conint(ge=0, le=50000)
-
-
 class RouteGenerationChallenge(BaseModel):
     routes_generated: int
 
 
 class RouteFavChallenge(BaseModel):
-    routes_favourited_shared: int
+    routes_favourited: int
+
+
+class RouteShareChallenge(BaseModel):
+    routes_shared: int
+
+
+class RoutePublishChallenge(BaseModel):
+    routes_published: int
+
+
+class ReadTipChallenge(BaseModel):
+    tips_read: int
+
+
+class AccessedGlobalFeedChallenge(BaseModel):
+    accessed_global_feed: bool
+
+
+class DailyLoggedInChallenge(BaseModel):
+    logged_in: bool
 
 
 class ChallengeScoreOut(BaseModel):

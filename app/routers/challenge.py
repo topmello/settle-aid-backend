@@ -274,7 +274,7 @@ async def update_score_in_redis(
 async def add_challenge_common(
         request: Request,
         user_id: int,
-        challenge_data: schemas.DistanceTravelledChallenge,
+        challenge_data: schemas.BaseModel,
         challenge_type: str,
         progress_calculator: Callable,
         db: Session,
@@ -360,64 +360,6 @@ async def add_challenge_common(
     }
 
 
-def distance_travelled_calculator(challenge_data, challenge):
-    """
-    Calculate the progress for distance travelled challenge.
-
-    This function calculates the progress
-    for the distance travelled challenge based on the steps and grade.
-
-    Parameters:
-    - challenge_data: The challenge data containing the steps.
-    - challenge: The challenge object.
-
-    Returns:
-    - float: The calculated progress.
-    """
-
-    return challenge_data.steps / (challenge.grade * 5000)
-
-
-@router.post("/distance_travelled/{user_id}/", status_code=201)
-async def add_challenge_distance_travelled(
-        request: Request,
-        user_id: int,
-        challenge_data: schemas.DistanceTravelledChallenge,
-        db: Session = Depends(get_db),
-        r: aioredis.Redis = Depends(get_redis_feed_db),
-        current_user: schemas.User = Depends(oauth2.get_current_user)
-):
-    """
-    Add distance travelled challenge.
-
-    This endpoint is used to add a distance travelled challenge
-    for a specific user.
-
-    Parameters:
-    - request (Request): The request object.
-    - user_id (int): The ID of the user to add the challenge for.
-    - challenge_data (schemas.DistanceTravelledChallenge): The challenge data.
-    - db (Session): The database session, injected by FastAPI.
-    - r (aioredis.Redis): The Redis instance, injected by FastAPI.
-    - current_user (schemas.User): The current authenticated user,
-      injected by FastAPI.
-
-    Returns:
-    - The response message.
-    """
-
-    return await add_challenge_common(
-        request,
-        user_id,
-        challenge_data,
-        "distance_travelled",
-        distance_travelled_calculator,
-        db,
-        r,
-        current_user
-    )
-
-
 def route_generation_calculator(
     challenge_data: schemas.RouteGenerationChallenge,
     challenge
@@ -490,7 +432,7 @@ async def add_challenge_route_generation(
     )
 
 
-def favourite_sharing_calculator(
+def favourite_calculator(
     challenge_data: schemas.RouteFavChallenge,
     challenge
 ):
@@ -513,17 +455,17 @@ def favourite_sharing_calculator(
     progress = 0
 
     if challenge.grade == 1:
-        progress = min(challenge_data.routes_favourited_shared / 10, 1)
+        progress = min(challenge_data.routes_favourited, 1)
     elif challenge.grade == 2:
-        progress = min(challenge_data.routes_favourited_shared / 20, 1)
+        progress = min(challenge_data.routes_favourited / 5, 1)
     elif challenge.grade == 3:
-        progress = min(challenge_data.routes_favourited_shared / 50, 1)
+        progress = min(challenge_data.routes_favourited / 10, 1)
 
     return progress
 
 
-@router.post("/favourite_sharing/{user_id}/", status_code=201)
-async def add_challenge_favourite_sharing(
+@router.post("/favourited/{user_id}/", status_code=201)
+async def add_challenge_favourite(
         request: Request,
         user_id: int,
         challenge_data: schemas.RouteFavChallenge,
@@ -554,8 +496,288 @@ async def add_challenge_favourite_sharing(
         request,
         user_id,
         challenge_data,
-        "favourite_sharing",
-        favourite_sharing_calculator,
+        "favourited",
+        favourite_calculator,
+        db,
+        r,
+        current_user
+    )
+
+
+def shared_calculator(
+    challenge_data: schemas.RouteShareChallenge,
+    challenge
+):
+    """
+    Calculate the progress for sharing challenge.
+
+    This function calculates the progress
+    for the favourite sharing challenge
+    based on the routes favourited/shared and grade.
+
+    Parameters:
+    - challenge_data (schemas.RouteFavChallenge):
+      The challenge data containing the routes shared.
+    - challenge: The challenge object.
+
+    Returns:
+    - float: The calculated progress.
+    """
+
+    progress = 0
+
+    if challenge.grade == 1:
+        progress = min(challenge_data.routes_shared, 1)
+    elif challenge.grade == 2:
+        progress = min(challenge_data.routes_shared / 5, 1)
+    elif challenge.grade == 3:
+        progress = min(challenge_data.routes_shared / 10, 1)
+
+    return progress
+
+
+@router.post("/shared/{user_id}/", status_code=201)
+async def add_challenge_share(
+        request: Request,
+        user_id: int,
+        challenge_data: schemas.RouteShareChallenge,
+        db: Session = Depends(get_db),
+        r: aioredis.Redis = Depends(get_redis_feed_db),
+        current_user: schemas.User = Depends(oauth2.get_current_user)
+):
+    """
+    Add favourite sharing challenge.
+
+    This endpoint is used to add a favourite sharing challenge
+    for a specific user.
+
+    Parameters:
+    - request (Request): The request object.
+    - user_id (int): The ID of the user to add the challenge for.
+    - challenge_data (schemas.RouteFavChallenge): The challenge data.
+    - db (Session): The database session, injected by FastAPI.
+    - r (aioredis.Redis): The Redis instance, injected by FastAPI.
+    - current_user (schemas.User): The current authenticated user,
+      injected by FastAPI.
+
+    Returns:
+    - The response message.
+    """
+
+    return await add_challenge_common(
+        request,
+        user_id,
+        challenge_data,
+        "shared",
+        shared_calculator,
+        db,
+        r,
+        current_user
+    )
+
+
+def publised_calculator(
+    challenge_data: schemas.RoutePublishChallenge,
+    challenge
+):
+    """
+    Calculate the progress for sharing challenge.
+
+    This function calculates the progress
+    for the favourite sharing challenge
+    based on the routes favourited/shared and grade.
+
+    Parameters:
+    - challenge_data (schemas.RouteFavChallenge):
+      The challenge data containing the routes shared.
+    - challenge: The challenge object.
+
+    Returns:
+    - float: The calculated progress.
+    """
+
+    progress = 0
+
+    if challenge.grade == 1:
+        progress = min(challenge_data.routes_published, 1)
+    elif challenge.grade == 2:
+        progress = min(challenge_data.routes_published / 5, 1)
+    elif challenge.grade == 3:
+        progress = min(challenge_data.routes_published / 10, 1)
+
+    return progress
+
+
+@router.post("/published/{user_id}/", status_code=201)
+async def add_challenge_share(
+        request: Request,
+        user_id: int,
+        challenge_data: schemas.RoutePublishChallenge,
+        db: Session = Depends(get_db),
+        r: aioredis.Redis = Depends(get_redis_feed_db),
+        current_user: schemas.User = Depends(oauth2.get_current_user)
+):
+    """
+    Add favourite sharing challenge.
+
+    This endpoint is used to add a favourite sharing challenge
+    for a specific user.
+
+    Parameters:
+    - request (Request): The request object.
+    - user_id (int): The ID of the user to add the challenge for.
+    - challenge_data (schemas.RouteFavChallenge): The challenge data.
+    - db (Session): The database session, injected by FastAPI.
+    - r (aioredis.Redis): The Redis instance, injected by FastAPI.
+    - current_user (schemas.User): The current authenticated user,
+      injected by FastAPI.
+
+    Returns:
+    - The response message.
+    """
+
+    return await add_challenge_common(
+        request,
+        user_id,
+        challenge_data,
+        "published",
+        publised_calculator,
+        db,
+        r,
+        current_user
+    )
+
+
+def read_tips_calculator(
+    challenge_data: schemas.ReadTipChallenge,
+    challenge
+):
+    """
+    Calculate the progress for sharing challenge.
+
+    This function calculates the progress
+    for the favourite sharing challenge
+    based on the routes favourited/shared and grade.
+
+    Parameters:
+    - challenge_data (schemas.RouteFavChallenge):
+      The challenge data containing the routes shared.
+    - challenge: The challenge object.
+
+    Returns:
+    - float: The calculated progress.
+    """
+
+    progress = 0
+
+    if challenge.grade == 1:
+        progress = min(challenge_data.tips_read, 1)
+    elif challenge.grade == 2:
+        progress = min(challenge_data.tips_read / 5, 1)
+    elif challenge.grade == 3:
+        progress = min(challenge_data.tips_read / 10, 1)
+
+    return progress
+
+
+@router.post("/tips_read/{user_id}/", status_code=201)
+async def add_challenge_tips(
+        request: Request,
+        user_id: int,
+        challenge_data: schemas.ReadTipChallenge,
+        db: Session = Depends(get_db),
+        r: aioredis.Redis = Depends(get_redis_feed_db),
+        current_user: schemas.User = Depends(oauth2.get_current_user)
+):
+    """
+    Add favourite sharing challenge.
+
+    This endpoint is used to add a favourite sharing challenge
+    for a specific user.
+
+    Parameters:
+    - request (Request): The request object.
+    - user_id (int): The ID of the user to add the challenge for.
+    - challenge_data (schemas.RouteFavChallenge): The challenge data.
+    - db (Session): The database session, injected by FastAPI.
+    - r (aioredis.Redis): The Redis instance, injected by FastAPI.
+    - current_user (schemas.User): The current authenticated user,
+      injected by FastAPI.
+
+    Returns:
+    - The response message.
+    """
+
+    return await add_challenge_common(
+        request,
+        user_id,
+        challenge_data,
+        "read_tips",
+        shared_calculator,
+        db,
+        r,
+        current_user
+    )
+
+
+def logged_in_cal(
+    challenge_data: schemas.DailyLoggedInChallenge,
+    challenge
+):
+
+    if challenge_data.logged_in:
+        return 1
+    else:
+        return 0
+
+
+@router.post("/logged_in/{user_id}/", status_code=201)
+async def add_challenge_loggedin(
+    request: Request,
+    user_id: int,
+    challenge_data: schemas.DailyLoggedInChallenge,
+    db: Session = Depends(get_db),
+    r: aioredis.Redis = Depends(get_redis_feed_db),
+    current_user: schemas.User = Depends(oauth2.get_current_user)
+):
+    return await add_challenge_common(
+        request,
+        user_id,
+        challenge_data,
+        "logged_in",
+        logged_in_cal,
+        db,
+        r,
+        current_user
+    )
+
+
+def accessed_feed_cal(
+    challenge_data: schemas.AccessedGlobalFeedChallenge,
+    challenge
+):
+
+    if challenge_data.accessed_global_feed:
+        return 1
+    else:
+        return 0
+
+
+@router.post("/accessed_global_feed/{user_id}/", status_code=201)
+async def add_challenge_accessed_feed(
+    request: Request,
+    user_id: int,
+    challenge_data: schemas.AccessedGlobalFeedChallenge,
+    db: Session = Depends(get_db),
+    r: aioredis.Redis = Depends(get_redis_feed_db),
+    current_user: schemas.User = Depends(oauth2.get_current_user)
+):
+    return await add_challenge_common(
+        request,
+        user_id,
+        challenge_data,
+        "accessed_global_feed",
+        accessed_feed_cal,
         db,
         r,
         current_user

@@ -252,23 +252,18 @@ def test_challenge(test_client):
 
     headers = {"Authorization": f"Bearer {token}"}
     time.sleep(2)
-    res = test_client.post(
-        f"/challenge/distance_travelled/{user_id}",
-        headers=headers,
-        json={"steps": 10000}
-    )
-    assert res.status_code == 201
 
     res = test_client.post(
         f"/challenge/route_generation/{user_id}",
         headers=headers,
-        json={"routes_generated": 5}
+        json={"routes_generated": 1}
     )
     assert res.status_code == 201
+
     res = test_client.post(
-        f"/challenge/favourite_sharing/{user_id}",
+        f"/challenge/favourited/{user_id}",
         headers=headers,
-        json={"routes_favourited_shared": 15}
+        json={"routes_favourited": 1}
     )
     assert res.status_code == 201
 
@@ -289,30 +284,20 @@ def test_challenge(test_client):
     for challenge in today_challenges:
         assert 0 <= challenge["progress"] <= 1
 
-    ten_thousand_steps_challenge = next(
-        (
-            challenge for challenge in today_challenges
-            if challenge["challenge"]["name"] == "10,000 steps"
-        ),
-        None
-    )
-    if ten_thousand_steps_challenge:
-        assert ten_thousand_steps_challenge["progress"] == 1.0
-
-    five_routes_challenge = next(
+    routes_gen_challenge = next(
         (challenge for challenge in today_challenges if challenge["challenge"]
-         ["name"] == "5 routes generated"),
+         ["name"] == "1 Routes Generated"),
         None
     )
 
-    if five_routes_challenge:
-        assert five_routes_challenge["progress"] == 1.0
+    if routes_gen_challenge:
+        assert routes_gen_challenge["progress"] == 1.0
 
-    fifteen_routes_challenge = next(
+    routes_fav_challenge = next(
         (challenge for challenge in today_challenges if challenge["challenge"]
-         ["name"] == "10 routes favourited/shared"),
+         ["name"] == "1 Favourited"),
         None
     )
 
-    if fifteen_routes_challenge:
-        assert fifteen_routes_challenge["progress"] == 1.0
+    if routes_fav_challenge:
+        assert routes_fav_challenge["progress"] == 1.0

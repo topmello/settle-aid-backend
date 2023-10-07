@@ -22,44 +22,100 @@
   },
   {
     "id": 4,
-    "type": "favourite_sharing",
-    "name": "10 Favorites Shared",
-    "score": 5,
+    "type": "favourited",
+    "name": "1 Favorited",
+    "score": 1,
     "grade": 1
   },
   {
     "id": 5,
-    "type": "favourite_sharing",
-    "name": "20 Favorites Shared",
-    "score": 10,
+    "type": "favourited",
+    "name": "5 Favorited",
+    "score": 3,
     "grade": 2
   },
   {
     "id": 6,
-    "type": "favourite_sharing",
-    "name": "50 Favorites Shared",
-    "score": 15,
+    "type": "favourited",
+    "name": "10 Favorited",
+    "score": 5,
     "grade": 3
   },
   {
     "id": 7,
-    "type": "distance_travelled",
-    "name": "5,000 steps",
-    "score": 5,
+    "type": "shared",
+    "name": "1 Shared",
+    "score": 1,
     "grade": 1
   },
   {
     "id": 8,
-    "type": "distance_travelled",
-    "name": "10,000 steps",
-    "score": 10,
+    "type": "shared",
+    "name": "5 Shared",
+    "score": 3,
     "grade": 2
   },
   {
     "id": 9,
-    "type": "distance_travelled",
-    "name": "15,000 steps",
-    "score": 15,
+    "type": "shared",
+    "name": "10 Shared",
+    "score": 5,
     "grade": 3
+  },
+  {
+    "id": 10,
+    "type": "published",
+    "name": "1 Published",
+    "score": 1,
+    "grade": 1
+  },
+  {
+    "id": 11,
+    "type": "published",
+    "name": "5 Published",
+    "score": 3,
+    "grade": 2
+  },
+  {
+    "id": 12,
+    "type": "published",
+    "name": "10 Published",
+    "score": 5,
+    "grade": 3
+  },
+  {
+    "id": 13,
+    "type": "read_tips",
+    "name": "1 Read",
+    "score": 1,
+    "grade": 1
+  },
+  {
+    "id": 14,
+    "type": "read_tips",
+    "name": "5 Read",
+    "score": 3,
+    "grade": 2
+  },
+  {
+    "id": 15,
+    "type": "read_tipes",
+    "name": "10 Read",
+    "score": 5,
+    "grade": 3
+  },
+  {
+    "id": 16,
+    "type": "logged_in",
+    "name": "Logged In",
+    "score": 1,
+    "grade": 1
+  },
+  {
+    "id": 17,
+    "type": "accessed_global_feed",
+    "name": "Accessed Global Feed",
+    "score": 1,
+    "grade": 1
   }
 ]
