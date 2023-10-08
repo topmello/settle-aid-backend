@@ -217,7 +217,7 @@ async def challenges(
     current_user: schemas.User = Depends(oauth2.get_current_user)
 ):
 
-    leaderboard = await get_leaderboard_(10, r)
+    leaderboard = await get_leaderboard_(10, r, db)
     return templates.TemplateResponse(
         "challenges.html", {
             "request": request,
