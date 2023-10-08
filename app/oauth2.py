@@ -39,7 +39,7 @@ class CustomOAuth2PasswordBearer(OAuth2PasswordBearer):
             raise InvalidCredentialsException()
 
 
-oauth2_scheme = CustomOAuth2PasswordBearer(tokenUrl="login")
+oauth2_scheme = CustomOAuth2PasswordBearer(tokenUrl="login/form/")
 
 
 async def get_user(
