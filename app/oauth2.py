@@ -43,24 +43,27 @@ oauth2_scheme = CustomOAuth2PasswordBearer(tokenUrl="login/form/")
 
 
 async def get_user(
-    user_id: int,
+    username: str,
     db: Session = Depends(get_db),
     r: aioredis.Redis = Depends(get_redis_refresh_token_db)
 ):
+    username = username.lower()
+
+    print("Getting user: ", username)
     # Check if user data is in Redis cache
-    cached_user_data = await r.get(f"user_data:{user_id}")
+    cached_user_data = await r.get(f"user_data:{username}")
 
     if cached_user_data != "null" and cached_user_data is not None:
         user = json.loads(cached_user_data)
         user = User(**user)
 
-        print("Fetching from Redis", user.user_id)
+        print("Fetching from Redis", user.username)
 
     else:
         print("Fetching from DB")
-        print("user_id", user_id)
+        print("username: ", username)
         user = db.query(models.User).filter(
-            models.User.user_id == user_id).first()
+            models.User.username == username).first()
 
         if not user:
             print("User not found")
@@ -69,7 +72,7 @@ async def get_user(
         user = User(**user.__dict__)
         # Cache the user data in Redis for future requests
         await r.setex(
-            f"user_data:{user_id}",
+            f"user_data:{username}",
             settings.USER_CACHE_EXPIRY,
             json.dumps({
                 "user_id": user.user_id,
@@ -127,7 +130,7 @@ async def get_current_user(
         r: aioredis.Redis = Depends(get_redis_refresh_token_db)):
 
     token_data = await verify_access_token(token)
-    user = await get_user(token_data.user_id, db, r)
+    user = await get_user(token_data.username, db, r)
 
     return user
 

@@ -296,7 +296,6 @@ async def update_score_in_redis(
     key = f'challenge_leaderboard_score:{year}:{week_num}'
     username = db.query(models.User.username).filter(
         models.User.user_id == user_id).first()[0]
-    print(username)
 
     await r.zincrby(key, score, username)
 
@@ -338,7 +337,6 @@ async def add_challenge_common(
     - dict: A dictionary containing details about the update status.
     """
 
-    print(current_user)
     if current_user.user_id != user_id:
         raise NotAuthorisedException()
 
