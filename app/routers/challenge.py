@@ -193,12 +193,7 @@ async def calculate_weekly_score(
                 case((models.User_Challenge.progress ==
                      1, models.Challenge.score), else_=0)
             ).label("score"),
-            func.sum(
-                case((models.User_Challenge.progress ==
-                     1, models.Challenge.score), else_=0)
 
-            ).filter(models.Challenge.type == 'distance_travelled')
-            .label("distance_travelled_score"),
             func.sum(
                 case((models.User_Challenge.progress ==
                      1, models.Challenge.score), else_=0)
@@ -209,8 +204,41 @@ async def calculate_weekly_score(
                 case((models.User_Challenge.progress ==
                      1, models.Challenge.score), else_=0)
 
-            ).filter(models.Challenge.type == 'favourite_sharing')
-            .label("favourite_sharing_score"),
+            ).filter(models.Challenge.type == 'favourited')
+            .label("favourited_score"),
+            func.sum(
+                case((models.User_Challenge.progress ==
+                     1, models.Challenge.score), else_=0)
+
+            ).filter(models.Challenge.type == 'shared')
+            .label("shared_score"),
+            func.sum(
+                case((models.User_Challenge.progress ==
+                     1, models.Challenge.score), else_=0)
+
+            ).filter(models.Challenge.type == 'published')
+            .label("published_score"),
+            func.sum(
+                case((models.User_Challenge.progress ==
+                     1, models.Challenge.score), else_=0)
+
+            ).filter(models.Challenge.type == 'read_tips')
+            .label("read_tips_score"),
+            func.sum(
+                case((models.User_Challenge.progress ==
+                     1, models.Challenge.score), else_=0)
+
+            ).filter(models.Challenge.type == 'logged_in')
+            .label("logged_in_score"),
+            func.sum(
+                case((models.User_Challenge.progress ==
+                     1, models.Challenge.score), else_=0)
+
+            ).filter(models.Challenge.type == 'accessed_global_feed')
+            .label("accessed_global_feed_score"),
+
+
+
         )
         .join(
             models.Challenge,

@@ -298,9 +298,13 @@ class DailyLoggedInChallenge(BaseModel):
 class ChallengeScoreOut(BaseModel):
     date: datetime
     score: float
-    distance_travelled_score: Optional[float]
     route_generation_score: Optional[float]
-    favourite_sharing_score: Optional[float]
+    favourited_score: Optional[float]
+    shared_score: Optional[float]
+    published_score: Optional[float]
+    read_tips_score: Optional[float]
+    accessed_global_feed_score: Optional[float]
+    logged_in_score: Optional[float]
 
 
 class LeaderboardOut(BaseModel):
