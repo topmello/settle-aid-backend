@@ -245,28 +245,27 @@ def test_challenge(test_client):
         "/login/v2/", json={"username": "test", "password": "test1234"})
     assert res.status_code == 200
 
-    user_id = res.json()["user_id"]
     token = res.json()["access_token"]
 
     headers = {"Authorization": f"Bearer {token}"}
     time.sleep(2)
 
     res = test_client.post(
-        f"/challenge/route_generation/{user_id}",
+        "/challenge/route_generation/",
         headers=headers,
         json={"routes_generated": 1}
     )
     assert res.status_code == 201
 
     res = test_client.post(
-        f"/challenge/favourited/{user_id}",
+        "/challenge/favourited/",
         headers=headers,
         json={"routes_favourited": 1}
     )
     assert res.status_code == 201
 
     res = test_client.get(
-        f"challenge/all/{user_id}",
+        "challenge/all-history/",
         headers=headers
     )
     # Adjust the 'today' calculation for Melbourne's timezone
