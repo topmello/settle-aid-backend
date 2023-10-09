@@ -1,10 +1,7 @@
 from sqlalchemy.dialects.postgresql import insert
 import json
-import asyncio
 from app import models
 from app.database import get_db
-from app.redis import get_redis_feed_db_context
-from app.huggingface_models import get_similar_image
 
 # Dictionary mapping location types to models
 DATA_FILES_MODELS = {

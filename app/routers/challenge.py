@@ -439,7 +439,7 @@ async def add_challenge_route_generation(
         current_user: schemas.User = Depends(oauth2.get_current_user)
 ):
     """
-    Add route generation challenge.
+    Add route generation challenge by incrementing the existing progress..
 
     This endpoint is used to add a route generation challenge
     for a specific user.
@@ -474,7 +474,7 @@ def favourite_calculator(
         challenge
 ):
     """
-    Calculate the progress for favourite sharing challenge.
+    Calculate the progress for favourite challenge.
 
     This function calculates the progress
     for the favourite sharing challenge
@@ -511,7 +511,7 @@ async def add_challenge_favourite(
         current_user: schemas.User = Depends(oauth2.get_current_user)
 ):
     """
-    Add favourite sharing challenge.
+    Add favouriting challenge by incrementing the existing progress.
 
     This endpoint is used to add a favourite sharing challenge
     for a specific user.
@@ -549,11 +549,11 @@ def shared_calculator(
     Calculate the progress for sharing challenge.
 
     This function calculates the progress
-    for the favourite sharing challenge
-    based on the routes favourited/shared and grade.
+    for sharing route challenge
+    based on the routes shared and grade.
 
     Parameters:
-    - challenge_data (schemas.RouteFavChallenge):
+    - challenge_data (schemas.RouteShareChallenge):
       The challenge data containing the routes shared.
     - challenge: The challenge object.
 
@@ -583,15 +583,15 @@ async def add_challenge_share(
         current_user: schemas.User = Depends(oauth2.get_current_user)
 ):
     """
-    Add favourite sharing challenge.
+    Add favourite sharing challenge by incrementing the existing progress.
 
-    This endpoint is used to add a favourite sharing challenge
+    This endpoint is used to add a sharing challenge
     for a specific user.
 
     Parameters:
     - request (Request): The request object.
     - user_id (int): The ID of the user to add the challenge for.
-    - challenge_data (schemas.RouteFavChallenge): The challenge data.
+    - challenge_data (schemas.RouteShareChallenge): The challenge data.
     - db (Session): The database session, injected by FastAPI.
     - r (aioredis.Redis): The Redis instance, injected by FastAPI.
     - current_user (schemas.User): The current authenticated user,
@@ -618,15 +618,16 @@ def publised_calculator(
         challenge
 ):
     """
-    Calculate the progress for sharing challenge.
+    Calculate the progress for publishing challenge
+    by incrementing the existing progress.
 
     This function calculates the progress
-    for the favourite sharing challenge
-    based on the routes favourited/shared and grade.
+    for the publish challenge
+    based on the routes published and grade.
 
     Parameters:
-    - challenge_data (schemas.RouteFavChallenge):
-      The challenge data containing the routes shared.
+    - challenge_data (schemas.RoutePublishChallenge):
+      The challenge data containing the routes published.
     - challenge: The challenge object.
 
     Returns:
@@ -655,15 +656,15 @@ async def add_challenge_publish(
         current_user: schemas.User = Depends(oauth2.get_current_user)
 ):
     """
-    Add favourite sharing challenge.
+    Add favourite publishing challenge by incrementing the existing progress.
 
-    This endpoint is used to add a favourite sharing challenge
+    This endpoint is used to add a published challenge
     for a specific user.
 
     Parameters:
     - request (Request): The request object.
     - user_id (int): The ID of the user to add the challenge for.
-    - challenge_data (schemas.RouteFavChallenge): The challenge data.
+    - challenge_data (schemas.RoutePublishChallenge): The challenge data.
     - db (Session): The database session, injected by FastAPI.
     - r (aioredis.Redis): The Redis instance, injected by FastAPI.
     - current_user (schemas.User): The current authenticated user,
@@ -690,15 +691,15 @@ def read_tips_calculator(
         challenge
 ):
     """
-    Calculate the progress for sharing challenge.
+    Calculate the progress for reading tips challenge.
 
     This function calculates the progress
-    for the favourite sharing challenge
-    based on the routes favourited/shared and grade.
+    for the read tips challenge
+    based on the and grade.
 
     Parameters:
-    - challenge_data (schemas.RouteFavChallenge):
-      The challenge data containing the routes shared.
+    - challenge_data (schemas.ReadTipChallenge):
+      The challenge data containing the number of tips read.
     - challenge: The challenge object.
 
     Returns:
@@ -727,7 +728,7 @@ async def add_challenge_tips(
         current_user: schemas.User = Depends(oauth2.get_current_user)
 ):
     """
-    Add favourite sharing challenge.
+    Add tips read challenge by incrementing the existing progress.
 
     This endpoint is used to add a favourite sharing challenge
     for a specific user.
@@ -735,7 +736,7 @@ async def add_challenge_tips(
     Parameters:
     - request (Request): The request object.
     - user_id (int): The ID of the user to add the challenge for.
-    - challenge_data (schemas.RouteFavChallenge): The challenge data.
+    - challenge_data (schemas.ReadTipChallenge): The challenge data.
     - db (Session): The database session, injected by FastAPI.
     - r (aioredis.Redis): The Redis instance, injected by FastAPI.
     - current_user (schemas.User): The current authenticated user,
@@ -777,6 +778,25 @@ async def add_challenge_loggedin(
         r: aioredis.Redis = Depends(get_redis_feed_db),
         current_user: schemas.User = Depends(oauth2.get_current_user)
 ):
+    """
+    Add logged in challenge only one time a day.
+
+    This endpoint is used to add a login challenge
+    for a specific user.
+
+    Parameters:
+    - request (Request): The request object.
+    - user_id (int): The ID of the user to add the challenge for.
+    - challenge_data (schemas.DailyLoggedInChallenge): The challenge data.
+    - db (Session): The database session, injected by FastAPI.
+    - r (aioredis.Redis): The Redis instance, injected by FastAPI.
+    - current_user (schemas.User): The current authenticated user,
+      injected by FastAPI.
+
+    Returns:
+    - The response message.
+    """
+
     return await add_challenge_common(
         request,
         user_id,
@@ -809,6 +829,25 @@ async def add_challenge_accessed_feed(
         r: aioredis.Redis = Depends(get_redis_feed_db),
         current_user: schemas.User = Depends(oauth2.get_current_user)
 ):
+    """
+    Add accessed global feed challenge only one time a day.
+
+    This endpoint is used to add an accessed global feed challenge
+    for a specific user.
+
+    Parameters:
+    - request (Request): The request object.
+    - user_id (int): The ID of the user to add the challenge for.
+    - challenge_data (schemas.AccessedGlobalFeedChallenge): The challenge data.
+    - db (Session): The database session, injected by FastAPI.
+    - r (aioredis.Redis): The Redis instance, injected by FastAPI.
+    - current_user (schemas.User): The current authenticated user,
+      injected by FastAPI.
+
+    Returns:
+    - The response message.
+    """
+
     return await add_challenge_common(
         request,
         user_id,
