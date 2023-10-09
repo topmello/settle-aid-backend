@@ -4,6 +4,7 @@ from .config import settings
 # Your Mapbox Access Token
 MAPBOX_ACCESS_TOKEN = settings.MAPBOX_ACCESS_TOKEN
 
+
 def get_route(coordinates, profile='walking'):
     """
     Get the route between multiple locations using Mapbox API.
@@ -24,5 +25,5 @@ def get_route(coordinates, profile='walking'):
     }
     response = requests.get(url, params=params)
     data = response.json()
-    
+
     return data
