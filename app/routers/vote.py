@@ -28,6 +28,7 @@ async def add_vote_(
     current_user: schemas.User
 ):
     if db.query(models.Route).filter(models.Route.route_id == route_id).first() is None:
+        print("Route not found")
         raise RouteNotFoundException()
 
     found_vote = db.query(models.User_Route_Vote).filter(

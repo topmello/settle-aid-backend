@@ -338,6 +338,7 @@ async def add_challenge_common(
     - dict: A dictionary containing details about the update status.
     """
 
+    print(current_user)
     if current_user.user_id != user_id:
         raise NotAuthorisedException()
 

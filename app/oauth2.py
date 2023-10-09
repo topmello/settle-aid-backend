@@ -43,29 +43,33 @@ oauth2_scheme = CustomOAuth2PasswordBearer(tokenUrl="login/form/")
 
 
 async def get_user(
-    username: str,
+    user_id: int,
     db: Session = Depends(get_db),
     r: aioredis.Redis = Depends(get_redis_refresh_token_db)
 ):
-
     # Check if user data is in Redis cache
-    cached_user_data = await r.get(f"user_data:{username}")
+    cached_user_data = await r.get(f"user_data:{user_id}")
 
     if cached_user_data != "null" and cached_user_data is not None:
         user = json.loads(cached_user_data)
         user = User(**user)
 
+        print("Fetching from Redis", user.user_id)
+
     else:
+        print("Fetching from DB")
+        print("user_id", user_id)
         user = db.query(models.User).filter(
-            models.User.username == username).first()
+            models.User.user_id == user_id).first()
 
         if not user:
+            print("User not found")
             raise UserNotFoundException()
 
         user = User(**user.__dict__)
         # Cache the user data in Redis for future requests
         await r.setex(
-            f"user_data:{username}",
+            f"user_data:{user_id}",
             settings.USER_CACHE_EXPIRY,
             json.dumps({
                 "user_id": user.user_id,
@@ -99,13 +103,15 @@ def create_access_token_v2(data: dict):
 
 
 async def verify_access_token(token: str):
+
     try:
         payload = jwt.decode(token, settings.SECRET_KEY,
                              algorithms=[settings.ALGORITHM])
+
         user_id = payload.get("user_id")
         username: str = payload.get("username")
 
-        if username is None:
+        if user_id is None or username is None:
             raise InvalidCredentialsException()
 
         return TokenData(user_id=user_id, username=username)
@@ -121,7 +127,7 @@ async def get_current_user(
         r: aioredis.Redis = Depends(get_redis_refresh_token_db)):
 
     token_data = await verify_access_token(token)
-    user = await get_user(token_data.username, db, r)
+    user = await get_user(token_data.user_id, db, r)
 
     return user
 
