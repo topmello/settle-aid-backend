@@ -111,15 +111,18 @@ async def verify_access_token(token: str):
         payload = jwt.decode(token, settings.SECRET_KEY,
                              algorithms=[settings.ALGORITHM])
 
+        print('Token decoded: ', payload)
         user_id = payload.get("user_id")
         username: str = payload.get("username")
 
         if user_id is None or username is None:
+            print('User id or username is None')
             raise InvalidCredentialsException()
 
         return TokenData(user_id=user_id, username=username)
 
     except JWTError:
+        print('JWTError', JWTError)
         raise InvalidCredentialsException()
 
 
