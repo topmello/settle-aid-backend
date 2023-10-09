@@ -257,12 +257,16 @@ def test_challenge(test_client):
     )
     assert res.status_code == 201
 
+    time.sleep(1)
+
     res = test_client.post(
         "/challenge/favourited/",
         headers=headers,
         json={"routes_favourited": 1}
     )
     assert res.status_code == 201
+
+    time.sleep(1)
 
     res = test_client.get(
         "challenge/all-history/",

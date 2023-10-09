@@ -8,7 +8,7 @@ from typing import Callable
 from .. import schemas, models, oauth2
 from ..database import get_db
 from ..redis import get_redis_feed_db, async_retry
-
+from ..limiter import limiter
 
 router = APIRouter(
     prefix='/challenge',
@@ -47,6 +47,7 @@ async def get_leaderboard_(
 
 
 @router.get("/leaderboard/", response_model=list[schemas.LeaderboardOut])
+@limiter.limit("1/second")
 async def get_leaderboard(
         request: Request,
         limit: int = Query(
@@ -73,6 +74,7 @@ async def get_leaderboard(
 
 
 @router.get("/today-history", response_model=list[schemas.UserChallengeOut])
+@limiter.limit("1/second")
 async def get_user_challenge(
         request: Request,
         db: Session = Depends(get_db),
@@ -110,6 +112,7 @@ async def get_user_challenge(
 
 
 @router.get("/all-history/", response_model=list[schemas.UserChallengeOut])
+@limiter.limit("1/second")
 async def get_all_user_challenge(
         request: Request,
         db: Session = Depends(get_db),
@@ -142,6 +145,7 @@ async def get_all_user_challenge(
 
 @router.get("/weekly-score/",
             response_model=list[schemas.ChallengeScoreOut])
+@limiter.limit("1/second")
 async def calculate_weekly_score(
         request: Request,
         db: Session = Depends(get_db),
@@ -300,7 +304,6 @@ async def update_score_in_redis(
 
 
 async def add_challenge_common(
-        request: Request,
         challenge_data: schemas.BaseModel,
         challenge_type: str,
         progress_calculator: Callable,
@@ -420,6 +423,7 @@ def route_generation_calculator(
 
 
 @router.post("/route_generation/", status_code=201)
+@limiter.limit("1/second")
 async def add_challenge_route_generation(
         request: Request,
         challenge_data: schemas.RouteGenerationChallenge,
@@ -448,7 +452,6 @@ async def add_challenge_route_generation(
 
     print("Endpoint accessed")
     return await add_challenge_common(
-        request,
         challenge_data,
         "route_generation",
         route_generation_calculator,
@@ -491,6 +494,7 @@ def favourite_calculator(
 
 
 @router.post("/favourited/", status_code=201)
+@limiter.limit("1/second")
 async def add_challenge_favourite(
         request: Request,
         challenge_data: schemas.RouteFavChallenge,
@@ -518,7 +522,6 @@ async def add_challenge_favourite(
     """
 
     return await add_challenge_common(
-        request,
         challenge_data,
         "favourited",
         favourite_calculator,
@@ -561,6 +564,7 @@ def shared_calculator(
 
 
 @router.post("/shared/", status_code=201)
+@limiter.limit("1/second")
 async def add_challenge_share(
         request: Request,
         challenge_data: schemas.RouteShareChallenge,
@@ -588,7 +592,6 @@ async def add_challenge_share(
     """
 
     return await add_challenge_common(
-        request,
         challenge_data,
         "shared",
         shared_calculator,
@@ -632,6 +635,7 @@ def publised_calculator(
 
 
 @router.post("/published/", status_code=201)
+@limiter.limit("1/second")
 async def add_challenge_publish(
         request: Request,
         challenge_data: schemas.RoutePublishChallenge,
@@ -659,7 +663,6 @@ async def add_challenge_publish(
     """
 
     return await add_challenge_common(
-        request,
         challenge_data,
         "published",
         publised_calculator,
@@ -702,6 +705,7 @@ def read_tips_calculator(
 
 
 @router.post("/tips_read/", status_code=201)
+@limiter.limit("1/second")
 async def add_challenge_tips(
         request: Request,
         challenge_data: schemas.ReadTipChallenge,
@@ -729,7 +733,6 @@ async def add_challenge_tips(
     """
 
     return await add_challenge_common(
-        request,
         challenge_data,
         "read_tips",
         shared_calculator,
@@ -751,6 +754,7 @@ def logged_in_cal(
 
 
 @router.post("/logged_in/", status_code=201)
+@limiter.limit("1/second")
 async def add_challenge_loggedin(
         request: Request,
         challenge_data: schemas.DailyLoggedInChallenge,
@@ -778,7 +782,6 @@ async def add_challenge_loggedin(
     """
 
     return await add_challenge_common(
-        request,
         challenge_data,
         "logged_in",
         logged_in_cal,
@@ -800,6 +803,7 @@ def accessed_feed_cal(
 
 
 @router.post("/accessed_global_feed/", status_code=201)
+@limiter.limit("1/second")
 async def add_challenge_accessed_feed(
         request: Request,
         challenge_data: schemas.AccessedGlobalFeedChallenge,
@@ -827,7 +831,6 @@ async def add_challenge_accessed_feed(
     """
 
     return await add_challenge_common(
-        request,
         challenge_data,
         "accessed_global_feed",
         accessed_feed_cal,
