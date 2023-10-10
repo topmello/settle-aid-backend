@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ValidationError, field_validator, constr, conint
+from pydantic import BaseModel, ValidationError, field_validator, constr, conint, root_validator
 from datetime import datetime
 from .models import Route
 from typing import Optional
@@ -260,6 +260,7 @@ class Challenge(BaseModel):
     goal: int
     grade: int
     score: int
+    name_: str
 
 
 class UserChallengeOut(BaseModel):
@@ -268,6 +269,21 @@ class UserChallengeOut(BaseModel):
     month: int
     day: int
     progress: float
+    current_progress: int
+    progress_name: str
+
+    @root_validator(pre=True)
+    @classmethod
+    def current_progress(cls, values):
+        progress = values.progress
+        goal = values.challenge.goal
+        name_ = values.challenge.name_
+
+        current = int(progress * goal)
+        values.current_progress = current
+        values.progress_name = name_.replace("_", f"{current}/{goal}")
+
+        return values
 
 
 class RouteGenerationChallenge(BaseModel):

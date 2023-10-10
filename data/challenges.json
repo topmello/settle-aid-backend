@@ -3,6 +3,7 @@
     "id": 1,
     "type": "route_generation",
     "name": "Generate 1 Route",
+    "name_": "Generated _ Route",
     "score": 1,
     "grade": 1,
     "goal": 1
@@ -11,14 +12,16 @@
     "id": 2,
     "type": "route_generation",
     "name": "Generate 5 Routes",
+    "name_": "Generated _ Routes",
     "score": 3,
     "grade": 2,
     "goal": 5
   },
   {
-    "id": 3,
+    "id": 2,
     "type": "route_generation",
-    "name": "Generated 10 Routes",
+    "name": "Generate 5 Routes",
+    "name_": "Generated _ Routes",
     "score": 5,
     "grade": 3,
     "goal": 10
@@ -27,6 +30,7 @@
     "id": 4,
     "type": "favourited",
     "name": "Favorite 1 Route",
+    "name_": "Favorited _ Route",
     "score": 1,
     "grade": 1,
     "goal": 1
@@ -35,6 +39,7 @@
     "id": 5,
     "type": "favourited",
     "name": "Favorite 5 Routes",
+    "name_": "Favorited _ Routes",
     "score": 3,
     "grade": 2,
     "goal": 5
@@ -43,6 +48,7 @@
     "id": 6,
     "type": "favourited",
     "name": "Favorite 10 Routes",
+    "name_": "Favorited _ Routes",
     "score": 5,
     "grade": 3,
     "goal": 10
@@ -50,15 +56,7 @@
   {
     "id": 7,
     "type": "shared",
-    "name": "Shared 1 Route",
-    "score": 1,
-    "grade": 1,
-    "goal": 1
-  },
-  {
-    "id": 8,
-    "type": "shared",
-    "name": "Share 5 Routes",
+    "name": "Share 1 Route","name_": "Shared _ Routes",
     "score": 3,
     "grade": 2,
     "goal": 5
@@ -67,6 +65,7 @@
     "id": 9,
     "type": "shared",
     "name": "Share 10 Routes",
+    "name_": "Shared _ Routes",
     "score": 5,
     "grade": 3,
     "goal": 10
@@ -75,6 +74,7 @@
     "id": 10,
     "type": "published",
     "name": "Publish 1 Route",
+    "name_": "Published _ Routes",
     "score": 1,
     "grade": 1,
     "goal": 1
@@ -83,6 +83,7 @@
     "id": 11,
     "type": "published",
     "name": "Publish 5 Routes",
+    "name_": "Published _ Routes",
     "score": 3,
     "grade": 2,
     "goal": 5
@@ -91,6 +92,7 @@
     "id": 12,
     "type": "published",
     "name": "Publish 10 Routes",
+    "name_": "Published _ Routes",
     "score": 5,
     "grade": 3,
     "goal": 10
@@ -99,6 +101,7 @@
     "id": 13,
     "type": "read_tips",
     "name": "Read 1 Tip",
+    "name_": "Read _ Tip",
     "score": 1,
     "grade": 1,
     "goal": 1
@@ -107,6 +110,7 @@
     "id": 14,
     "type": "read_tips",
     "name": "Read 5 Tips",
+    "name_": "Read _ Tips",
     "score": 3,
     "grade": 2,
     "goal": 5
@@ -115,6 +119,7 @@
     "id": 15,
     "type": "read_tipes",
     "name": "Read 10 Tips",
+    "name_": "Read _ Tips",
     "score": 5,
     "grade": 3,
     "goal": 10
@@ -123,6 +128,7 @@
     "id": 16,
     "type": "logged_in",
     "name": "Daily Log In",
+    "name_": "Logged in Today",
     "score": 1,
     "grade": 1,
     "goal": 1
@@ -131,6 +137,7 @@
     "id": 17,
     "type": "accessed_global_feed",
     "name": "Access Global Feed",
+    "name_": "Accessed Global Feed Today",
     "score": 1,
     "grade": 1,
     "goal": 1
