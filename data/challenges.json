@@ -20,7 +20,7 @@
   {
     "id": 3,
     "type": "route_generation",
-    "name": "Generate 5 Routes",
+    "name": "Generate 10 Routes",
     "name_": "Generated _ Routes",
     "score": 5,
     "grade": 3,
