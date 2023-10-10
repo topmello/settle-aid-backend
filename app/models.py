@@ -202,6 +202,7 @@ class Challenge(Base):
     type = Column(String, nullable=False)
     grade = Column(Integer, nullable=False)
     score = Column(Float, nullable=False)
+    goal = Column(Integer, nullable=False)
     user_challenges = relationship(
         "User_Challenge", back_populates="challenge")
 

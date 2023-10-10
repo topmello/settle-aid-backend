@@ -23,7 +23,8 @@ def upgrade() -> None:
         sa.Column("name", sa.String, nullable=False),
         sa.Column("type", sa.String, nullable=False),
         sa.Column("grade", sa.Integer, nullable=False),
-        sa.Column("score", sa.Float, nullable=False)
+        sa.Column("score", sa.Float, nullable=False),
+        sa.Column("goal", sa.Integer, nullable=False),
     )
 
     op.create_table(

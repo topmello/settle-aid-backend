@@ -330,9 +330,7 @@ async def add_challenge_common(
     Returns:
     - dict: A dictionary containing details about the update status.
     """
-    print("in add challenge common")
     user_id = current_user.user_id
-    print(user_id)
 
     challenges = db.query(models.Challenge).filter(
         models.Challenge.type == challenge_type).all()
@@ -376,7 +374,7 @@ async def add_challenge_common(
         db.refresh(user_challenge)
 
         # If the progress is 1, and score is not added, update score in Redis
-        if progress == 1.0 and not user_challenge.score_added:
+        if user_challenge.progress == 1.0 and not user_challenge.score_added:
             # Use the score from the challenge
             await update_score_in_redis(user_id, challenge.score, r, db)
             user_challenge.score_added = True

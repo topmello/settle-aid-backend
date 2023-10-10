@@ -257,6 +257,9 @@ class TrackRoomOut(BaseModel):
 class Challenge(BaseModel):
     name: str
     type: str
+    goal: int
+    grade: int
+    score: int
 
 
 class UserChallengeOut(BaseModel):
