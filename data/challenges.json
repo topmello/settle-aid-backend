@@ -18,7 +18,7 @@
   {
     "id": 3,
     "type": "route_generation",
-    "name": "Generated 10 Routes",
+    "name": "Generate 10 Routes",
     "score": 5,
     "grade": 3,
     "goal": 10
@@ -50,7 +50,7 @@
   {
     "id": 7,
     "type": "shared",
-    "name": "Shared 1 Route",
+    "name": "Share 1 Route",
     "score": 1,
     "grade": 1,
     "goal": 1
