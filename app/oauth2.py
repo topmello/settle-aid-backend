@@ -49,7 +49,6 @@ async def get_user(
 ):
     username = username.lower()
 
-    print("Getting user: ", username)
     # Check if user data is in Redis cache
     cached_user_data = await r.get(f"user_data:{username}")
 
@@ -57,16 +56,11 @@ async def get_user(
         user = json.loads(cached_user_data)
         user = User(**user)
 
-        print("Fetching from Redis", user.username)
-
     else:
-        print("Fetching from DB")
-        print("username: ", username)
         user = db.query(models.User).filter(
             models.User.username == username).first()
 
         if not user:
-            print("User not found")
             raise UserNotFoundException()
 
         user = User(**user.__dict__)
@@ -111,18 +105,15 @@ async def verify_access_token(token: str):
         payload = jwt.decode(token, settings.SECRET_KEY,
                              algorithms=[settings.ALGORITHM])
 
-        print('Token decoded: ', payload)
         user_id = payload.get("user_id")
         username: str = payload.get("username")
 
         if user_id is None or username is None:
-            print('User id or username is None')
             raise InvalidCredentialsException()
 
         return TokenData(user_id=user_id, username=username)
 
     except JWTError:
-        print('JWTError', JWTError)
         raise InvalidCredentialsException()
 
 

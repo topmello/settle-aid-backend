@@ -14,7 +14,7 @@ from ..mapbox import get_route
 
 from ..limiter import limiter
 from ..exceptions import LocationNotFoundException, InvalidSearchQueryException
-from .. import models, schemas, oauth2
+from .. import models, schemas, oauth2, translation
 
 
 router = APIRouter(
@@ -472,7 +472,17 @@ async def search_by_query_seq_v3(
       locations, route coordinates, instructions, and duration.
     """
 
+    # querys.query = translation.translate_list(querys.query)
+    # querys.negative_query = translation.translate_list(
+    #    querys.negative_query)
+
     out = await search_by_query_seq_v2_(querys, db, current_user)
+
+    # if querys.lang != "en-AU":
+    #    out.instructions = translation.translate_list(
+    #        out.instructions,
+    #        querys.lang
+    #    )
 
     idx = random.randint(0, len(querys.query)-1)
 
