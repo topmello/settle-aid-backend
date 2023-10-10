@@ -199,6 +199,7 @@ class Challenge(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
+    name_ = Column(String, nullable=False)
     type = Column(String, nullable=False)
     grade = Column(Integer, nullable=False)
     score = Column(Float, nullable=False)
