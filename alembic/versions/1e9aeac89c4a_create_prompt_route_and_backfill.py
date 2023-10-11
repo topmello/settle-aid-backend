@@ -41,5 +41,5 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    models.Prompt_Route.__table__.drop(op.get_bind())
+    op.execute("DROP TABLE prompt_routes CASCADE")
     pass
