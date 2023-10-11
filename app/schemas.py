@@ -337,3 +337,8 @@ class ChallengeScoreOut(BaseModel):
 class LeaderboardOut(BaseModel):
     username: str
     score: float
+
+
+class TipImage(BaseModel):
+    image_name: str
+    image: str

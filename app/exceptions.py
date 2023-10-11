@@ -83,3 +83,9 @@ class VoteNotFoundException(CustomHTTPException):
     default_status_code = 404
     default_type = "vote_not_found"
     default_msg = "Vote not found"
+
+
+class ImageNotFoundException(CustomHTTPException):
+    default_status_code = 404
+    default_type = "image_not_found"
+    default_msg = "Image not found"

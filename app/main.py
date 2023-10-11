@@ -16,6 +16,7 @@ from .routers import (
     vote,
     route,
     challenge,
+    tip,
     ui
 )
 from .limiter import limiter
@@ -33,6 +34,7 @@ from .exceptions import (
     ParametersTooLargeException,
     AlreadyVotedException,
     VoteNotFoundException,
+    ImageNotFoundException
 )
 from .exception_handlers import (
     custom_exception_handler,
@@ -136,6 +138,7 @@ app.include_router(translate.router)
 app.include_router(vote.router)
 app.include_router(route.router)
 app.include_router(challenge.router)
+app.include_router(tip.router)
 app.include_router(track.router)
 app.include_router(ui.router)
 app.mount("/track-sio", track_sio.subapi)
@@ -154,6 +157,7 @@ exceptions_to_handle = [
     ParametersTooLargeException,
     AlreadyVotedException,
     VoteNotFoundException,
+    ImageNotFoundException
 ]
 
 for exception in exceptions_to_handle:
