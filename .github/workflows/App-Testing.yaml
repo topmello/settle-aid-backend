@@ -13,6 +13,9 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Build the Docker images
+        run: docker-compose -f docker-compose-dev.yaml down -v
+
+      - name: Build the Docker images
         run: docker-compose -f docker-compose-dev.yaml up -d --build
       
       - name: Check Directory Permissions
@@ -36,4 +39,4 @@ jobs:
         run: docker exec backend pytest
 
       - name: Stop and remove Docker container
-        run: docker-compose -f docker-compose-dev.yaml down
+        run: docker-compose -f docker-compose-dev.yaml down -v
