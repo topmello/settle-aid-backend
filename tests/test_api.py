@@ -178,6 +178,33 @@ def test_route_v2(test_client):
     assert res.status_code == 204
 
 
+def test_route_v3(test_client):
+    res = test_client.post(
+        "/login/v2/", json={"username": "test", "password": "test1234"})
+    assert res.status_code == 200
+    token = res.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    time.sleep(2)
+
+    res = test_client.post(
+        "/search/v3/route/",
+        headers=headers,
+        json={
+            "query": ["museum", "Indian", "Warehouse"],
+            "negative_query": ["Chinese", "Japanese", "Korean"],
+            "location_type": ["landmark", "restaurant", "pharmacy"],
+            "longitude": 144.9549,
+            "latitude": -37.81803,
+            "distance_threshold": 1000,
+            "similarity_threshold": 0.1,
+            "negative_similarity_threshold": 0.1,
+            "route_type": "walking"
+        })
+    assert res.status_code == 200
+    assert len(res.json()["locations"]) == 3
+
+
 def test_vote(test_client):
     res = test_client.post(
         "/login/v2/", json={"username": "test", "password": "test1234"})
@@ -241,6 +268,9 @@ def test_vote(test_client):
 
 
 def test_challenge(test_client):
+    print("Testing challenge...")
+
+    print("Creating user...")
     res = test_client.post(
         "/login/v2/", json={"username": "test", "password": "test1234"})
     assert res.status_code == 200
@@ -250,6 +280,7 @@ def test_challenge(test_client):
     headers = {"Authorization": f"Bearer {token}"}
     time.sleep(2)
 
+    print("Creating challenge...")
     res = test_client.post(
         "/challenge/route_generation/",
         headers=headers,
@@ -268,10 +299,13 @@ def test_challenge(test_client):
 
     time.sleep(1)
 
+    print("Getting challenge history...")
     res = test_client.get(
         "challenge/all-history/",
         headers=headers
     )
+
+    print("Checking challenge history...")
     # Adjust the 'today' calculation for Melbourne's timezone
     melbourne_timezone = pytz.timezone('Australia/Melbourne')
     today = datetime.now(melbourne_timezone).date()
@@ -285,18 +319,20 @@ def test_challenge(test_client):
     for challenge in today_challenges:
         assert 0 <= challenge["progress"] <= 1
 
+    print("Checking route generation challenge score...")
     routes_gen_challenge = next(
         (challenge for challenge in today_challenges if challenge["challenge"]
-         ["name"] == "1 Routes Generated"),
+         ["name"] == "Generate 1 Route"),
         None
     )
 
     if routes_gen_challenge:
         assert routes_gen_challenge["progress"] == 1.0
 
+    print("Checking route favourited challenge score...")
     routes_fav_challenge = next(
         (challenge for challenge in today_challenges if challenge["challenge"]
-         ["name"] == "1 Favourited"),
+         ["name"] == "Favorite 1 Route"),
         None
     )
 
