@@ -85,6 +85,12 @@ class VoteNotFoundException(CustomHTTPException):
     default_msg = "Vote not found"
 
 
+class LanguageNotSupportedException(CustomHTTPException):
+    default_status_code = 400
+    default_type = "language_not_supported"
+    default_msg = "Language not supported"
+
+
 class ImageNotFoundException(CustomHTTPException):
     default_status_code = 404
     default_type = "image_not_found"

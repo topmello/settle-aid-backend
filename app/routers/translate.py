@@ -33,6 +33,6 @@ async def translate(
 
     """
 
-    translate_text = translation.translate_list(query.texts)
+    translated_text = translation.translate_text(query.text)
 
-    return schemas.TranslateRes(results=translate_text)
+    return schemas.TranslateRes(result=translated_text)

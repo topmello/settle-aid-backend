@@ -216,7 +216,6 @@ class RouteQueryV2(QuerySeq):
     negative_query: list[constr(max_length=50)]
     negative_similarity_threshold: float
     route_type: str = "walking"
-    # lang: str = "en-AU"
 
     @field_validator('route_type')
     def check_route_type(cls, v):
@@ -225,13 +224,6 @@ class RouteQueryV2(QuerySeq):
             raise ValueError(
                 f'route_type must be one of {allowed_route_types}')
         return v
-
-    # @field_validator('lang')
-    # def check_input_lang(cls, v):
-    #    allowed_langs = ['en-AU', 'zh-CN', 'hi-IN']
-    #    if v not in allowed_langs:
-    #        raise ValueError(f'lang must be one of {allowed_langs}')
-    #    return v
 
 
 class SearchResult(BaseModel):
@@ -246,11 +238,11 @@ class UsernameGen(BaseModel):
 
 
 class TranslateQuery(BaseModel):
-    texts: list[constr(max_length=50)]
+    text: constr(max_length=50)
 
 
 class TranslateRes(BaseModel):
-    results: list[str]
+    result: str
 
 
 class VoteIn(BaseModel):
@@ -292,6 +284,10 @@ class UserChallengeOut(BaseModel):
         values.progress_name = name_.replace("_", f"{current}/{goal}")
 
         return values
+
+
+class Instructions(BaseModel):
+    instructions: list[str]
 
 
 class RouteGenerationChallenge(BaseModel):

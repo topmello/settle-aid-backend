@@ -34,6 +34,7 @@ from .exceptions import (
     ParametersTooLargeException,
     AlreadyVotedException,
     VoteNotFoundException,
+    LanguageNotSupportedException,
     ImageNotFoundException
 )
 from .exception_handlers import (
@@ -157,6 +158,7 @@ exceptions_to_handle = [
     ParametersTooLargeException,
     AlreadyVotedException,
     VoteNotFoundException,
+    LanguageNotSupportedException,
     ImageNotFoundException
 ]
 

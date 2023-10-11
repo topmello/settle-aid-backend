@@ -42,10 +42,10 @@ def test_generate_name(test_client):
 
 def test_translate(test_client):
     res = test_client.post("translate", json={
-        "texts": ["你好"]
+        "text": "你好"
     })
     assert res.status_code == 200
-    assert res.json()["results"] == ["Hello"]
+    assert res.json()["result"] == "Hello"
 
 
 def test_create_user(test_client):

@@ -13,7 +13,11 @@ from ..redis import get_redis_feed_db, async_retry
 from ..mapbox import get_route
 
 from ..limiter import limiter
-from ..exceptions import LocationNotFoundException, InvalidSearchQueryException
+from ..exceptions import (
+    LocationNotFoundException,
+    InvalidSearchQueryException,
+    LanguageNotSupportedException
+)
 from .. import models, schemas, oauth2, translation
 
 
@@ -472,17 +476,27 @@ async def search_by_query_seq_v3(
       locations, route coordinates, instructions, and duration.
     """
 
-    # querys.query = translation.translate_list(querys.query)
-    # querys.negative_query = translation.translate_list(
-    #    querys.negative_query)
+    if querys.lang != 'en-AU':
+        querys_text_pos = '_'.join(querys.query)
+        querys_text_neg = '_'.join(querys.negative_query)
+        querys_input = querys_text_pos + '|' + querys_text_neg
+        translated_querys = translation.translate_text(
+            querys_input,
+            'en-AU'
+        )
+
+        translated_text_pos, translated_text_neg = translated_querys.split('|')
+
+        querys.query = translated_text_pos.split('_')
+        querys.negative_query = translated_text_neg.split('_')
 
     out = await search_by_query_seq_v2_(querys, db, current_user)
 
-    # if querys.lang != "en-AU":
-    #    out.instructions = translation.translate_list(
-    #        out.instructions,
-    #        querys.lang
-    #    )
+    await r.set(
+        f"route_instructions:{out.route_id}",
+        "_".join(out.instructions),
+        ex=3600
+    )
 
     idx = random.randint(0, len(querys.query)-1)
 
@@ -505,3 +519,43 @@ async def search_by_query_seq_v3(
         route_image_name=route_image_name
     )
     return out_v3
+
+
+@ router.get("/route/instructions/{route_id}/{language}/",
+             response_model=schemas.Instructions)
+async def get_instruction(
+    request: Request,
+    route_id: int,
+    language: str,
+    r: aioredis.Redis = Depends(get_redis_feed_db)
+):
+    if language not in ['zh-CN', 'hi-IN']:
+        raise LanguageNotSupportedException()
+
+    translated_instructions = await r.get(
+        f"route_instructions_translated:{route_id}"
+    )
+    if translated_instructions is not None:
+        return schemas.Instructions(
+            instructions=translated_instructions.split("_")
+        )
+
+    instructions = await r.get(f"route_instructions:{route_id}")
+
+    if instructions is None:
+        raise LocationNotFoundException()
+
+    translated_instructions = translation.translate_text(
+        instructions,
+        language
+    )
+
+    await r.set(
+        f"route_instructions_translated:{route_id}",
+        translated_instructions,
+        ex=3600
+    )
+
+    return schemas.Instructions(
+        instructions=translated_instructions.split("_")
+    )
