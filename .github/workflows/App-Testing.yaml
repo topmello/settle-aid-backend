@@ -28,6 +28,9 @@ jobs:
 
       - name: Check Running User
         run: docker exec backend id
+
+      - name: Check database logs
+        run: docker logs db
             
       - name: Run pytest
         run: docker exec backend pytest

@@ -5,7 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.db
-    image: jirathipk/postgres-vec-geo:latest
+    image: ghcr.io/topmello/postgres-vec-geo:latest
     restart: always
     environment:
       - POSTGRES_DB=database
@@ -29,7 +29,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.backend
-    image: jirathipk/settle-aid-backend:latest
+    image: ghcr.io/topmello/settle-aid-backend:latest
     ports:
       - "8000:8000"
     volumes:
