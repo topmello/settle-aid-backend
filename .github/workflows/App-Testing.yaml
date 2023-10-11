@@ -37,6 +37,7 @@ jobs:
             
       - name: Run pytest
         run: docker exec backend pytest -vv -s
+        timeout-minutes: 3
 
       - name: Stop and remove Docker container
         run: docker-compose -f docker-compose-dev.yaml down -v
