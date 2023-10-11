@@ -26,7 +26,6 @@ def test_client():
     print("Running tests...")
     with TestClient(app) as testing_client:
         yield testing_client
-    command.downgrade(alembic_config, "base")
 
 
 def test_access_docs(test_client):

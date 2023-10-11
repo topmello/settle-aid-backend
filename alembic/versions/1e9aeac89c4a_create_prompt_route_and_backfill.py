@@ -41,5 +41,5 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.execute("DROP TABLE prompt_routes CASCADE")
+    op.drop_table("prompt_routes")
     pass
