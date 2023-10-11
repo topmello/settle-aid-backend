@@ -476,7 +476,7 @@ async def search_by_query_seq_v3(
       locations, route coordinates, instructions, and duration.
     """
 
-    if querys.lang != 'en-AU':
+    if querys.language != 'en-AU':
         querys_text_pos = '_'.join(querys.query)
         querys_text_neg = '_'.join(querys.negative_query)
         querys_input = querys_text_pos + '|' + querys_text_neg
@@ -527,7 +527,8 @@ async def get_instruction(
     request: Request,
     route_id: int,
     language: str,
-    r: aioredis.Redis = Depends(get_redis_feed_db)
+    r: aioredis.Redis = Depends(get_redis_feed_db),
+    db: Session = Depends(get_db),
 ):
     if language not in ['zh-CN', 'hi-IN']:
         raise LanguageNotSupportedException()
@@ -543,7 +544,14 @@ async def get_instruction(
     instructions = await r.get(f"route_instructions:{route_id}")
 
     if instructions is None:
-        raise LocationNotFoundException()
+
+        instructions = db.query(models.Route.instructions).filter(
+            models.Route.route_id == route_id).first()
+
+        instructions = "_".join(instructions[0])
+
+        if instructions is None:
+            raise LocationNotFoundException()
 
     translated_instructions = translation.translate_text(
         instructions,

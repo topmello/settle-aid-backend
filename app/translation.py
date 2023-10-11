@@ -25,8 +25,6 @@ def translate_text(text: str, target_language: str = DEFAULT_LANG) -> dict:
 
     target = LANG_DICT[target_language]
 
-    print(target)
-
     result = translate_client.translate(text, target_language=target)
 
     return result["translatedText"]

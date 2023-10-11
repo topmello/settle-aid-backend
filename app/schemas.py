@@ -216,6 +216,7 @@ class RouteQueryV2(QuerySeq):
     negative_query: list[constr(max_length=50)]
     negative_similarity_threshold: float
     route_type: str = "walking"
+    language: str = "en-AU"
 
     @field_validator('route_type')
     def check_route_type(cls, v):
@@ -223,6 +224,14 @@ class RouteQueryV2(QuerySeq):
         if v not in allowed_route_types:
             raise ValueError(
                 f'route_type must be one of {allowed_route_types}')
+        return v
+
+    @field_validator('language')
+    def check_language(cls, v):
+        allowed_languages = ['en-AU', 'zh-CN', 'hi-IN']
+        if v not in allowed_languages:
+            raise ValueError(
+                f'language must be one of {allowed_languages}')
         return v
 
 

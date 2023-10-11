@@ -36,7 +36,7 @@ jobs:
         run: docker logs db
             
       - name: Run pytest
-        run: docker exec backend pytest
+        run: docker exec backend pytest -vv
 
       - name: Stop and remove Docker container
         run: docker-compose -f docker-compose-dev.yaml down -v
