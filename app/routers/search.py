@@ -516,7 +516,11 @@ async def search_by_query_seq_v3(
 
     out_v3 = schemas.RouteOutV3(
         **out.model_dump(),
-        route_image_name=route_image_name
+        route_image_name=route_image_name,
+        query=querys.query,
+        negative_query=querys.negative_query,
+        location_type=querys.location_type
+
     )
     return out_v3
 

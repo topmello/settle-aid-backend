@@ -51,7 +51,7 @@ class Prompt(Base):
     routes = relationship(
         "Route",
         secondary="prompt_routes",
-        backref="prompts"
+        back_populates="prompts"
     )
 
 
@@ -71,6 +71,11 @@ class Route(Base):
     created_at = Column(TIMESTAMP(timezone=True),
                         server_default=text("now()"), nullable=False)
     image = relationship("Route_Image", back_populates="route", uselist=False)
+    prompts = relationship(
+        "Prompt",
+        secondary="prompt_routes",
+        back_populates="routes"
+    )
 
 
 class User_Route_Vote(Base):

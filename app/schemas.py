@@ -93,6 +93,9 @@ class RouteOutV2(BaseModel):
 
 class RouteOutV3(RouteOutV2):
     route_image_name: str
+    location_type: list[str]
+    query: list[str]
+    negative_query: list[str]
 
     @classmethod
     def from_orm(cls, route: Route) -> "RouteOutV3":
@@ -107,6 +110,10 @@ class RouteOutV3(RouteOutV2):
         ]
         route_image_name = route.image.route_image_name if route.image else ''
 
+        location_type = route.prompts[0].location_type
+        query = route.prompts[0].prompt
+        negative_query = route.prompts[0].negative_prompt
+
         return cls(
             route_id=route.route_id,
             locations=route.locations,
@@ -115,7 +122,10 @@ class RouteOutV3(RouteOutV2):
             instructions=route.instructions,
             duration=route.duration,
             created_at=route.created_at,
-            route_image_name=route_image_name
+            route_image_name=route_image_name,
+            location_type=location_type,
+            query=query,
+            negative_query=negative_query
         )
 
 
