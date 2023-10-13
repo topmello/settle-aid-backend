@@ -448,7 +448,6 @@ async def add_challenge_route_generation(
     - The response message.
     """
 
-    print("Endpoint accessed")
     return await add_challenge_common(
         challenge_data,
         "route_generation",
@@ -733,7 +732,7 @@ async def add_challenge_tips(
     return await add_challenge_common(
         challenge_data,
         "read_tips",
-        shared_calculator,
+        read_tips_calculator,
         db,
         r,
         current_user

@@ -127,7 +127,7 @@
   },
   {
     "id": 15,
-    "type": "read_tipes",
+    "type": "read_tips",
     "name": "Read 10 Tips",
     "name_": "Read _ Tips",
     "score": 5,
